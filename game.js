@@ -171,7 +171,9 @@ $(function () {
 
   bullet.configureMatrix = function () {};
   bullet.draw = function () {
-    canvas.fillEllipse(this.x, this.y, 2, 2);
+    if (this.visible) {
+      canvas.fillEllipse(this.x-1, this.y-1, 2, 2);
+    }
   };
   bullet.postMove = function () {
     if (this.x >= canvasWidth || this.x <= 0 ||
@@ -218,10 +220,13 @@ $(function () {
         for (var i = 0; i < bullets.length; i++) {
           if (!bullets[i].visible) {
             var rad = ((ship.rot-90) * Math.PI)/180;
-            bullets[i].x = ship.x;
-            bullets[i].y = ship.y;
-            bullets[i].vel.x = 6 * Math.cos(rad) + ship.vel.x;
-            bullets[i].vel.y = 6 * Math.sin(rad) + ship.vel.y;
+            var vectorx = Math.cos(rad);
+            var vectory = Math.sin(rad);
+            // move to the nose of the ship
+            bullets[i].x = ship.x + vectorx * 4;
+            bullets[i].y = ship.y + vectory * 4;
+            bullets[i].vel.x = 6 * vectorx + ship.vel.x;
+            bullets[i].vel.y = 6 * vectory + ship.vel.y;
             bullets[i].visible = true;
             break;
           }
@@ -238,10 +243,12 @@ $(function () {
 
   ship.postMove = function () {
     if (ship.x >= canvasWidth || ship.x <= 0) {
-      ship.vel.x = -ship.vel.x
+      ship.vel.x = -ship.vel.x;
+      ship.x = ship.x <= 0 ? 0 : canvasWidth;
     }
     if (ship.y >= canvasHeight || ship.y <= 0) {
-      ship.vel.y = -ship.vel.y
+      ship.vel.y = -ship.vel.y;
+      ship.y = ship.y <= 0 ? 0 : canvasHeight;
     }
   };
 
