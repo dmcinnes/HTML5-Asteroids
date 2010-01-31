@@ -16,6 +16,17 @@ $(window).keydown(function (e) {
   KEY_STATUS[KEY_CODES[e.keyCode]] = false;
 });
 
+Array.prototype.convertToPolyline = function () {
+  var pairCount = this.length/2;
+  var x = new Array(pairCount);
+  var y = new Array(pairCount);
+  for (var i = 0; i < pairCount; i++) {
+    x[i] = this[i*2];
+    y[i] = this[i*2+1];
+  }
+  return [x, y];
+};
+
 Matrix = function (rows, columns) {
   var i, j;
   this.data = new Array(rows);
@@ -52,7 +63,7 @@ Sprite = function (canvas, points) {
   this.points = points;
   this.children = {};
 
-  this.visible = true;
+  this.visible = false;
 
   this.x = 0;
   this.y = 0;
@@ -79,6 +90,8 @@ Sprite = function (canvas, points) {
   };
 
   this.move = function () {
+    if (!this.visible) return;
+
     if ($.isFunction(this.preMove)) {
       this.preMove();
     }
@@ -90,8 +103,7 @@ Sprite = function (canvas, points) {
     this.rot += this.vrot;
     if (this.rot > 360) {
       this.rot -= 360;
-    }
-    if (this.rot < 0) {
+    } else if (this.rot < 0) {
       this.rot += 360;
     }
 
@@ -132,22 +144,13 @@ Sprite = function (canvas, points) {
 
 };
 
-Array.prototype.convertToPolyline = function () {
-  var pairCount = this.length/2;
-  var x = new Array(pairCount);
-  var y = new Array(pairCount);
-  for (var i = 0; i < pairCount; i++) {
-    x[i] = this[i*2];
-    y[i] = this[i*2+1];
-  }
-  return [x, y];
-};
-
 
 $(function () {
   var canvas = $("#canvas");
   var canvasWidth  = canvas.width();
   var canvasHeight = canvas.height();
+
+  var sprites = [];
 
   var ship = new Sprite(canvas, [-5,   4,
                                   0, -12,
@@ -158,10 +161,35 @@ $(function () {
                                                0, 11,
                                                3,  6,
                                               -3,  6]);
-  ship.children.exhaust.visible = false;
 
   ship.x = canvasWidth / 2;
   ship.y = canvasHeight / 2;
+
+  ship.visible = true;
+
+  var bullet = new Sprite(canvas, []);
+
+  bullet.configureMatrix = function () {};
+  bullet.draw = function () {
+    canvas.fillEllipse(this.x, this.y, 2, 2);
+  };
+  bullet.postMove = function () {
+    if (this.x >= canvasWidth || this.x <= 0 ||
+        this.y >= canvasHeight || this.y <= 0) {
+      this.visible = false;
+    }
+  };
+
+  sprites.push(ship);
+
+  bullets = [];
+  for (var i = 0; i < 10; i++) {
+    var bull = $.extend(true, {}, bullet);
+    bullets.push(bull)
+    sprites.push(bull);
+  }
+
+  var spaceCounter = 0;
 
   ship.preMove = function () {
     if (KEY_STATUS.left) {
@@ -171,6 +199,7 @@ $(function () {
     } else {
       ship.vrot = 0;
     }
+
     if (KEY_STATUS.up) {
       var rad = ((ship.rot-90) * Math.PI)/180;
       ship.acc.x = 0.5 * Math.cos(rad);
@@ -181,6 +210,26 @@ $(function () {
       ship.acc.y = 0;
       ship.children.exhaust.visible = false;
     }
+
+    if (KEY_STATUS.space) {
+      spaceCounter++;
+      if (spaceCounter > 5) {
+        spaceCounter = 0;
+        for (var i = 0; i < bullets.length; i++) {
+          if (!bullets[i].visible) {
+            var rad = ((ship.rot-90) * Math.PI)/180;
+            bullets[i].x = ship.x;
+            bullets[i].y = ship.y;
+            bullets[i].vel.x = 6 * Math.cos(rad) + ship.vel.x;
+            bullets[i].vel.y = 6 * Math.sin(rad) + ship.vel.y;
+            bullets[i].visible = true;
+            break;
+          }
+        }
+      }
+    }
+
+    // limit the ship's speed
     if (Math.sqrt(ship.vel.x * ship.vel.x + ship.vel.y * ship.vel.y) > 8) {
       ship.vel.x *= 0.95;
       ship.vel.y *= 0.95;
@@ -196,10 +245,13 @@ $(function () {
     }
   };
 
+  var i = 0;
   var mainLoop = setInterval(function () {
     canvas.fillRect(0, 0, canvasWidth, canvasHeight, {color:'white'});
 
-    ship.run();
+    for (i = 0; i < sprites.length; i++) {
+      sprites[i].run();
+    }
   }, 25);
 
   canvas.click(function () {
