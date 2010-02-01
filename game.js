@@ -58,26 +58,30 @@ Matrix = function (rows, columns) {
 
 matrix = new Matrix(3, 3);
 
-Sprite = function (canvas, points) {
+Sprite = function (canvas, points, diameter) {
   this.canvas = canvas;
   this.points = points;
+  this.diameter = diameter || 1;
+
   this.children = {};
 
   this.visible = false;
 
-  this.x = 0;
-  this.y = 0;
-  this.rot = 0;
+  this.x     = 0;
+  this.y     = 0;
+  this.rot   = 0;
+  this.scale = 1;
 
   this.vel = {
-    x: 0,
-    y: 0
+    x:   0,
+    y:   0,
+    rot: 0
   };
-  this.vrot = 0;
 
   this.acc = {
-    x: 0,
-    y: 0
+    x:   0,
+    y:   0,
+    rot: 0
   };
 
   this.preMove = null;
@@ -100,7 +104,7 @@ Sprite = function (canvas, points) {
     this.vel.y += this.acc.y;
     this.x += this.vel.x;
     this.y += this.vel.y;
-    this.rot += this.vrot;
+    this.rot += this.vel.rot;
     if (this.rot > 360) {
       this.rot -= 360;
     } else if (this.rot < 0) {
@@ -116,8 +120,8 @@ Sprite = function (canvas, points) {
     if (!this.visible) return;
 
     var rad = (this.rot * Math.PI)/180;
-    var sin = Math.sin(rad);
-    var cos = Math.cos(rad);
+    var sin = Math.sin(rad) * this.scale;
+    var cos = Math.cos(rad) * this.scale;
     matrix.set(cos, -sin, this.x,
                sin,  cos, this.y,
                  0,    0,      1);
@@ -152,10 +156,24 @@ $(function () {
 
   var sprites = [];
 
+  var wrapPostMove = function () {
+    var buffer = this.scale * this.diameter;
+    if (this.x - buffer > canvasWidth) {
+      this.x = -buffer;
+    } else if (this.x + buffer < 0) {
+      this.x = canvasWidth + buffer;
+    }
+    if (this.y - buffer > canvasHeight) {
+      this.y = -buffer;
+    } else if (this.y + buffer < 0) {
+      this.y = canvasHeight + buffer;
+    }
+  }
+
   var ship = new Sprite(canvas, [-5,   4,
                                   0, -12,
                                   5,   4,
-                                 -5,   4]);
+                                 -5,   4], 12);
 
   ship.children.exhaust = new Sprite(canvas, [-3,  6,
                                                0, 11,
@@ -167,7 +185,7 @@ $(function () {
 
   ship.visible = true;
 
-  var bullet = new Sprite(canvas, []);
+  var bullet = new Sprite(canvas);
 
   bullet.configureMatrix = function () {};
   bullet.draw = function () {
@@ -182,51 +200,81 @@ $(function () {
     }
   };
 
-  sprites.push(ship);
+  var asteroid = new Sprite(canvas, [-10,   0,
+                                      -5,   7,
+                                      -3,   4,
+                                       1,  10,
+                                       5,   4,
+                                      10,   0,
+                                       5,  -6,
+                                       2, -10,
+                                      -4, -10,
+                                      -4,  -5,
+                                     -10,   0], 20);
 
-  bullets = [];
-  for (var i = 0; i < 10; i++) {
+  asteroid.visible = true;
+  asteroid.scale = 4;
+  asteroid.postMove = wrapPostMove;
+
+  sprites.push(ship);
+  sprites.push(bullet);
+
+  bullets = [bullet];
+  for (var i = 0; i < 9; i++) {
     var bull = $.extend(true, {}, bullet);
-    bullets.push(bull)
+    bullets.push(bull);
     sprites.push(bull);
   }
 
-  var spaceCounter = 0;
+  for (var i = 0; i < 5; i++) {
+    var roid = $.extend(true, {}, asteroid);
+    roid.x = Math.random() * canvasWidth;
+    roid.y = Math.random() * canvasHeight;
+    roid.vel.x = Math.random() * 2 - 1;
+    roid.vel.y = Math.random() * 2 - 1;
+    if (Math.random() > 0.5) {
+      roid.points.reverse();
+    }
+    roid.vel.rot = Math.random() * 2 - 1;
+    sprites.push(roid);
+  }
+
+  var bulletCounter = 0;
 
   ship.preMove = function () {
     if (KEY_STATUS.left) {
-      ship.vrot = -5;
+      this.vel.rot = -5;
     } else if (KEY_STATUS.right) {
-      ship.vrot = 5;
+      this.vel.rot = 5;
     } else {
-      ship.vrot = 0;
+      this.vel.rot = 0;
     }
 
     if (KEY_STATUS.up) {
-      var rad = ((ship.rot-90) * Math.PI)/180;
-      ship.acc.x = 0.5 * Math.cos(rad);
-      ship.acc.y = 0.5 * Math.sin(rad);
-      ship.children.exhaust.visible = Math.random() > 0.1;
+      var rad = ((this.rot-90) * Math.PI)/180;
+      this.acc.x = 0.5 * Math.cos(rad);
+      this.acc.y = 0.5 * Math.sin(rad);
+      this.children.exhaust.visible = Math.random() > 0.1;
     } else {
-      ship.acc.x = 0;
-      ship.acc.y = 0;
-      ship.children.exhaust.visible = false;
+      this.acc.x = 0;
+      this.acc.y = 0;
+      this.children.exhaust.visible = false;
     }
 
     if (KEY_STATUS.space) {
-      spaceCounter++;
-      if (spaceCounter > 5) {
-        spaceCounter = 0;
+      bulletCounter++;
+      if (bulletCounter > 5) {
+        bulletCounter = 0;
         for (var i = 0; i < bullets.length; i++) {
           if (!bullets[i].visible) {
-            var rad = ((ship.rot-90) * Math.PI)/180;
+            var rad = ((this.rot-90) * Math.PI)/180;
             var vectorx = Math.cos(rad);
             var vectory = Math.sin(rad);
             // move to the nose of the ship
-            bullets[i].x = ship.x + vectorx * 4;
-            bullets[i].y = ship.y + vectory * 4;
-            bullets[i].vel.x = 6 * vectorx + ship.vel.x;
-            bullets[i].vel.y = 6 * vectory + ship.vel.y;
+            bullets[i].x = this.x + vectorx * 4;
+            bullets[i].y = this.y + vectory * 4;
+            bullets[i].vel.x = 6 * vectorx + this.vel.x;
+            bullets[i].vel.y = 6 * vectory + this.vel.y;
             bullets[i].visible = true;
             break;
           }
@@ -241,16 +289,7 @@ $(function () {
     }
   };
 
-  ship.postMove = function () {
-    if (ship.x >= canvasWidth || ship.x <= 0) {
-      ship.vel.x = -ship.vel.x;
-      ship.x = ship.x <= 0 ? 0 : canvasWidth;
-    }
-    if (ship.y >= canvasHeight || ship.y <= 0) {
-      ship.vel.y = -ship.vel.y;
-      ship.y = ship.y <= 0 ? 0 : canvasHeight;
-    }
-  };
+  ship.postMove = wrapPostMove;
 
   var i = 0;
   var mainLoop = setInterval(function () {
