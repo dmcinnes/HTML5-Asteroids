@@ -58,9 +58,10 @@ Matrix = function (rows, columns) {
 
 matrix = new Matrix(3, 3);
 
-Sprite = function (canvas, points, diameter) {
-  this.canvas = canvas;
-  this.points = points;
+Sprite = function (canvas, name, points, diameter) {
+  this.canvas   = canvas;
+  this.name     = name;
+  this.points   = points;
   this.diameter = diameter || 1;
 
   this.children = {};
@@ -146,6 +147,18 @@ Sprite = function (canvas, points, diameter) {
     }
   };
 
+  this.checkCollision = function (other) {
+    if (!this.visible || !other.visible) return;
+    var dist = Math.sqrt(Math.pow(other.x - this.x, 2) + Math.pow(other.y - this.y, 2));
+    if (dist < this.diameter * this.scale * 0.5 + other.diameter * other.scale * 0.5) {
+      this.collision(other);
+      other.collision(this);
+    }
+  };
+
+  this.collision = function () {
+  };
+
 };
 
 
@@ -170,22 +183,27 @@ $(function () {
     }
   }
 
-  var ship = new Sprite(canvas, [-5,   4,
-                                  0, -12,
-                                  5,   4,
-                                 -5,   4], 12);
+  var ship = new Sprite(canvas,
+                        "ship",
+                        [-5,   4,
+                          0, -12,
+                          5,   4,
+                         -5,   4], 12);
 
-  ship.children.exhaust = new Sprite(canvas, [-3,  6,
-                                               0, 11,
-                                               3,  6,
-                                              -3,  6]);
+  ship.children.exhaust = new Sprite(canvas,
+                                     "exhaust",
+                                     [-3,  6,
+                                       0, 11,
+                                       3,  6,
+                                      -3,  6]);
 
   ship.x = canvasWidth / 2;
   ship.y = canvasHeight / 2;
 
   ship.visible = true;
 
-  var bullet = new Sprite(canvas);
+  var bullet = new Sprite(canvas, "bullet");
+  bullet.time = 0;
 
   bullet.configureMatrix = function () {};
   bullet.draw = function () {
@@ -193,36 +211,56 @@ $(function () {
       canvas.fillEllipse(this.x-1, this.y-1, 2, 2);
     }
   };
-  bullet.postMove = function () {
-    if (this.x >= canvasWidth || this.x <= 0 ||
-        this.y >= canvasHeight || this.y <= 0) {
+  bullet.preMove = function () {
+    if (this.visible) {
+      this.time++;
+    }
+    if (this.time > 50) {
       this.visible = false;
+      this.time = 0;
+    }
+  };
+  bullet.postMove = wrapPostMove;
+  bullet.collision = function (other) {
+    if (other.name == "asteroid") {
+      this.visible = false;
+      this.time = 0;
     }
   };
 
-  var asteroid = new Sprite(canvas, [-10,   0,
-                                      -5,   7,
-                                      -3,   4,
-                                       1,  10,
-                                       5,   4,
-                                      10,   0,
-                                       5,  -6,
-                                       2, -10,
-                                      -4, -10,
-                                      -4,  -5,
-                                     -10,   0], 20);
+  var asteroid = new Sprite(canvas,
+                            "asteroid",
+                            [-10,   0,
+                              -5,   7,
+                              -3,   4,
+                               1,  10,
+                               5,   4,
+                              10,   0,
+                               5,  -6,
+                               2, -10,
+                              -4, -10,
+                              -4,  -5,
+                             -10,   0], 20);
 
   asteroid.visible = true;
   asteroid.scale = 4;
   asteroid.postMove = wrapPostMove;
+  asteroid.collision = function (other) {
+    if (other.name == "bullet") {
+      this.scale /= 2;
+      if (this.scale < 0.5) {
+        this.visible = false;
+      }
+    }
+  };
 
   sprites.push(ship);
   sprites.push(bullet);
 
-  bullets = [bullet];
+  ship.bullets = [bullet];
   for (var i = 0; i < 9; i++) {
     var bull = $.extend(true, {}, bullet);
-    bullets.push(bull);
+    ship.bullets.push(bull);
     sprites.push(bull);
   }
 
@@ -230,8 +268,8 @@ $(function () {
     var roid = $.extend(true, {}, asteroid);
     roid.x = Math.random() * canvasWidth;
     roid.y = Math.random() * canvasHeight;
-    roid.vel.x = Math.random() * 2 - 1;
-    roid.vel.y = Math.random() * 2 - 1;
+    roid.vel.x = Math.random() * 4 - 2;
+    roid.vel.y = Math.random() * 4 - 2;
     if (Math.random() > 0.5) {
       roid.points.reverse();
     }
@@ -239,7 +277,7 @@ $(function () {
     sprites.push(roid);
   }
 
-  var bulletCounter = 0;
+  ship.bulletCounter = 0;
 
   ship.preMove = function () {
     if (KEY_STATUS.left) {
@@ -261,21 +299,24 @@ $(function () {
       this.children.exhaust.visible = false;
     }
 
+    if (this.bulletCounter > 0) {
+      this.bulletCounter--;
+    }
     if (KEY_STATUS.space) {
-      bulletCounter++;
-      if (bulletCounter > 5) {
-        bulletCounter = 0;
-        for (var i = 0; i < bullets.length; i++) {
-          if (!bullets[i].visible) {
+      if (this.bulletCounter == 0) {
+        this.bulletCounter = 5;
+        for (var i = 0; i < ship.bullets.length; i++) {
+          if (!ship.bullets[i].visible) {
+            var bullet = ship.bullets[i];
             var rad = ((this.rot-90) * Math.PI)/180;
             var vectorx = Math.cos(rad);
             var vectory = Math.sin(rad);
             // move to the nose of the ship
-            bullets[i].x = this.x + vectorx * 4;
-            bullets[i].y = this.y + vectory * 4;
-            bullets[i].vel.x = 6 * vectorx + this.vel.x;
-            bullets[i].vel.y = 6 * vectory + this.vel.y;
-            bullets[i].visible = true;
+            bullet.x = this.x + vectorx * 4;
+            bullet.y = this.y + vectory * 4;
+            bullet.vel.x = 6 * vectorx + this.vel.x;
+            bullet.vel.y = 6 * vectory + this.vel.y;
+            bullet.visible = true;
             break;
           }
         }
@@ -291,12 +332,18 @@ $(function () {
 
   ship.postMove = wrapPostMove;
 
-  var i = 0;
+  var i, j = 0;
   var mainLoop = setInterval(function () {
     canvas.fillRect(0, 0, canvasWidth, canvasHeight, {color:'white'});
 
     for (i = 0; i < sprites.length; i++) {
       sprites[i].run();
+
+      for (j = 0; j < sprites.length; j++) {
+        if (i != j) {
+          sprites[i].checkCollision(sprites[j]);
+        }
+      }
     }
   }, 25);
 
