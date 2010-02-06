@@ -100,7 +100,7 @@ Sprite = function (canvas, name, points, diameter) {
     if (!this.visible) return;
 
     if ($.isFunction(this.preMove)) {
-      this.preMove();
+      this.preMove(delta);
     }
 
     this.vel.x += this.acc.x * delta;
@@ -115,7 +115,7 @@ Sprite = function (canvas, name, points, diameter) {
     }
 
     if ($.isFunction(this.postMove)) {
-      this.postMove();
+      this.postMove(delta);
     }
   };
 
@@ -219,9 +219,9 @@ $(function () {
       canvas.fillEllipse(this.x-1, this.y-1, 2, 2);
     }
   };
-  bullet.preMove = function () {
+  bullet.preMove = function (delta) {
     if (this.visible) {
-      this.time++;
+      this.time += delta;
     }
     if (this.time > 50) {
       this.visible = false;
@@ -298,7 +298,7 @@ $(function () {
 
   ship.bulletCounter = 0;
 
-  ship.preMove = function () {
+  ship.preMove = function (delta) {
     if (KEY_STATUS.left) {
       this.vel.rot = -5;
     } else if (KEY_STATUS.right) {
@@ -319,11 +319,11 @@ $(function () {
     }
 
     if (this.bulletCounter > 0) {
-      this.bulletCounter--;
+      this.bulletCounter -= delta;
     }
     if (KEY_STATUS.space) {
-      if (this.bulletCounter == 0) {
-        this.bulletCounter = 5;
+      if (this.bulletCounter <= 0) {
+        this.bulletCounter = 6;
         for (var i = 0; i < ship.bullets.length; i++) {
           if (!ship.bullets[i].visible) {
             var bullet = ship.bullets[i];
@@ -364,7 +364,7 @@ $(function () {
   var mainLoop = function () {
     canvas.fillRect(0, 0, canvasWidth, canvasHeight, {color:'white'});
 
-    thisFrame = new Date(); 
+    thisFrame = new Date();
     elapsed = thisFrame - lastFrame;
     lastFrame = thisFrame;
     delta = elapsed / 30;
