@@ -3,6 +3,8 @@ KEY_CODES = {
   37: 'left',
   38: 'up',
   39: 'right',
+  70: 'f',
+  72: 'h'
 }
 
 KEY_STATUS = {};
@@ -202,6 +204,12 @@ $(function () {
 
   ship.visible = true;
 
+  ship.collision = function (other) {
+    if (other.name == "asteroid") {
+      this.visible = false;
+    }
+  };
+
   var bullet = new Sprite(canvas, "bullet");
   bullet.time = 0;
 
@@ -246,10 +254,21 @@ $(function () {
   asteroid.scale = 4;
   asteroid.postMove = wrapPostMove;
   asteroid.collision = function (other) {
-    if (other.name == "bullet") {
-      this.scale /= 2;
-      if (this.scale < 0.5) {
-        this.visible = false;
+    if (other.name == "asteroid") return;
+    this.scale /= 2;
+    if (this.scale < 0.5) {
+      this.visible = false;
+    } else {
+      // break into fragments
+      for (var i = 0; i < 2; i++) {
+        var roid = $.extend(true, {}, this);
+        roid.vel.x = Math.random() * 6 - 3;
+        roid.vel.y = Math.random() * 6 - 3;
+        if (Math.random() > 0.5) {
+          roid.points.reverse();
+        }
+        roid.vel.rot = Math.random() * 2 - 1;
+        sprites.push(roid);
       }
     }
   };
@@ -264,7 +283,7 @@ $(function () {
     sprites.push(bull);
   }
 
-  for (var i = 0; i < 5; i++) {
+  for (var i = 0; i < 3; i++) {
     var roid = $.extend(true, {}, asteroid);
     roid.x = Math.random() * canvasWidth;
     roid.y = Math.random() * canvasHeight;
@@ -333,19 +352,29 @@ $(function () {
   ship.postMove = wrapPostMove;
 
   var i, j = 0;
+  var framecounter = 0;
+  var framerate = $('#framerate');
+
   var mainLoop = setInterval(function () {
+    framecounter++;
     canvas.fillRect(0, 0, canvasWidth, canvasHeight, {color:'white'});
 
     for (i = 0; i < sprites.length; i++) {
+
       sprites[i].run();
 
       for (j = 0; j < sprites.length; j++) {
-        if (i != j) {
+        if (i != j && sprites[i].name != sprites[j].name) {
           sprites[i].checkCollision(sprites[j]);
         }
       }
     }
   }, 25);
+
+  setInterval(function () {
+    framerate.text(framecounter);
+    framecounter = 0;
+  }, 1000);
 
   canvas.click(function () {
     clearInterval(mainLoop);
