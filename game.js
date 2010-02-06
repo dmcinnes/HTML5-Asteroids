@@ -90,24 +90,24 @@ Sprite = function (canvas, name, points, diameter) {
   this.preMove = null;
   this.postMove = null;
 
-  this.run = function() {
-    this.move();
+  this.run = function(delta) {
+    this.move(delta);
     this.configureMatrix();
     this.draw();
   };
 
-  this.move = function () {
+  this.move = function (delta) {
     if (!this.visible) return;
 
     if ($.isFunction(this.preMove)) {
       this.preMove();
     }
 
-    this.vel.x += this.acc.x;
-    this.vel.y += this.acc.y;
-    this.x += this.vel.x;
-    this.y += this.vel.y;
-    this.rot += this.vel.rot;
+    this.vel.x += this.acc.x * delta;
+    this.vel.y += this.acc.y * delta;
+    this.x += this.vel.x * delta;
+    this.y += this.vel.y * delta;
+    this.rot += this.vel.rot * delta;
     if (this.rot > 360) {
       this.rot -= 360;
     } else if (this.rot < 0) {
@@ -352,16 +352,26 @@ $(function () {
   ship.postMove = wrapPostMove;
 
   var i, j = 0;
-  var framecounter = 0;
+  var showFramerate = false;
+  var avgFramerate = 30;
   var framerate = $('#framerate');
 
-  var mainLoop = setInterval(function () {
-    framecounter++;
+  var lastFrame = new Date();
+  var thisFrame;
+  var elapsed;
+  var delta;
+
+  var mainLoop = function () {
     canvas.fillRect(0, 0, canvasWidth, canvasHeight, {color:'white'});
+
+    thisFrame = new Date(); 
+    elapsed = thisFrame - lastFrame;
+    lastFrame = thisFrame;
+    delta = elapsed / 30;
 
     for (i = 0; i < sprites.length; i++) {
 
-      sprites[i].run();
+      sprites[i].run(delta);
 
       for (j = 0; j < sprites.length; j++) {
         if (i != j && sprites[i].name != sprites[j].name) {
@@ -369,14 +379,26 @@ $(function () {
         }
       }
     }
-  }, 25);
 
-  setInterval(function () {
-    framerate.text(framecounter);
-    framecounter = 0;
-  }, 1000);
+    if (showFramerate) {
+      avgFramerate = Math.round((avgFramerate * 9 + (1000 / elapsed)) / 10);
+      framerate.text(avgFramerate);
+    }
+
+  };
+
+  var mainLoopId = setInterval(mainLoop, 25);
+
+  $(window).keydown(function (e) {
+    if (KEY_CODES[e.keyCode] == 'f') {
+      showFramerate = !showFramerate;
+      if (!showFramerate) {
+        framerate.text('');
+      }
+    }
+  });
 
   canvas.click(function () {
-    clearInterval(mainLoop);
+    clearInterval(mainLoopId);
   });
 });
