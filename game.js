@@ -251,11 +251,11 @@ $(function () {
                              -10,   0], 20);
 
   asteroid.visible = true;
-  asteroid.scale = 4;
+  asteroid.scale = 6;
   asteroid.postMove = wrapPostMove;
   asteroid.collision = function (other) {
     if (other.name == "asteroid") return;
-    this.scale /= 2;
+    this.scale /= 3;
     if (this.scale < 0.5) {
       this.visible = false;
     } else {
@@ -387,7 +387,7 @@ $(function () {
 
   };
 
-  var mainLoopId = setInterval(mainLoop, 25);
+  var mainLoopId = setInterval(mainLoop, 10);
 
   $(window).keydown(function (e) {
     if (KEY_CODES[e.keyCode] == 'f') {
