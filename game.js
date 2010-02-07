@@ -18,50 +18,8 @@ $(window).keydown(function (e) {
   KEY_STATUS[KEY_CODES[e.keyCode]] = false;
 });
 
-Array.prototype.convertToPolyline = function () {
-  var pairCount = this.length/2;
-  var x = new Array(pairCount);
-  var y = new Array(pairCount);
-  for (var i = 0; i < pairCount; i++) {
-    x[i] = this[i*2];
-    y[i] = this[i*2+1];
-  }
-  return [x, y];
-};
-
-Matrix = function (rows, columns) {
-  var i, j;
-  this.data = new Array(rows);
-  for (i = 0; i < rows; i++) {
-    this.data[i] = new Array(columns);
-  }
-
-  this.set = function () {
-    var k = 0;
-    for (i = 0; i < rows; i++) {
-      for (j = 0; j < columns; j++) {
-        this.data[i][j] = arguments[k];
-        k++;
-      }
-    }
-  }
-
-  this.multiply = function () {
-    var vector = new Array(rows);
-    for (i = 0; i < rows; i++) {
-      vector[i] = 0;
-      for (j = 0; j < columns; j++) {
-        vector[i] += this.data[i][j] * arguments[j];
-      }
-    }
-    return vector;
-  };
-};
-
-matrix = new Matrix(3, 3);
-
-Sprite = function (canvas, name, points, diameter) {
-  this.canvas   = canvas;
+Sprite = function (context, name, points, diameter) {
+  this.context   = context;
   this.name     = name;
   this.points   = points;
   this.diameter = diameter || 1;
@@ -91,9 +49,13 @@ Sprite = function (canvas, name, points, diameter) {
   this.postMove = null;
 
   this.run = function(delta) {
+    context.save();
+
     this.move(delta);
-    this.configureMatrix();
+    this.configureTransform();
     this.draw();
+
+    context.restore();
   };
 
   this.move = function (delta) {
@@ -119,30 +81,32 @@ Sprite = function (canvas, name, points, diameter) {
     }
   };
 
-  this.configureMatrix = function () {
+  this.configureTransform = function () {
     if (!this.visible) return;
 
     var rad = (this.rot * Math.PI)/180;
-    var sin = Math.sin(rad) * this.scale;
-    var cos = Math.cos(rad) * this.scale;
-    matrix.set(cos, -sin, this.x,
-               sin,  cos, this.y,
-                 0,    0,      1);
+
+    context.translate(this.x, this.y);
+    context.rotate(rad);
+    context.scale(this.scale, this.scale);
   };
 
   this.draw = function () {
     if (!this.visible) return;
 
-    var ret = new Array(this.points.length);
-    for (var i = 0; i < this.points.length/2; i++) {
+    context.lineWidth = 1.0 / this.scale;
+
+    context.beginPath();
+
+    context.moveTo(this.points[0], this.points[1]);
+    for (var i = 1; i < this.points.length/2; i++) {
       var xi = i*2;
       var yi = xi + 1;
-      var vector = matrix.multiply(this.points[xi], this.points[yi], 1);
-      ret[xi] = vector[0];
-      ret[yi] = vector[1];
+      context.lineTo(this.points[xi], this.points[yi]);
     }
 
-    canvas.drawPolyline.apply(canvas, ret.convertToPolyline());
+    context.closePath();
+    context.stroke();
 
     for (child in this.children) {
       this.children[child].draw();
@@ -169,6 +133,8 @@ $(function () {
   var canvasWidth  = canvas.width();
   var canvasHeight = canvas.height();
 
+  var context = canvas[0].getContext("2d");
+
   var sprites = [];
 
   var wrapPostMove = function () {
@@ -183,21 +149,19 @@ $(function () {
     } else if (this.y + buffer < 0) {
       this.y = canvasHeight + buffer;
     }
-  }
+  };
 
-  var ship = new Sprite(canvas,
+  var ship = new Sprite(context,
                         "ship",
                         [-5,   4,
                           0, -12,
-                          5,   4,
-                         -5,   4], 12);
+                          5,   4], 12);
 
-  ship.children.exhaust = new Sprite(canvas,
+  ship.children.exhaust = new Sprite(context,
                                      "exhaust",
                                      [-3,  6,
                                        0, 11,
-                                       3,  6,
-                                      -3,  6]);
+                                       3,  6]);
 
   ship.x = canvasWidth / 2;
   ship.y = canvasHeight / 2;
@@ -210,13 +174,21 @@ $(function () {
     }
   };
 
-  var bullet = new Sprite(canvas, "bullet");
+  var bullet = new Sprite(context, "bullet");
   bullet.time = 0;
 
-  bullet.configureMatrix = function () {};
+  bullet.configureTransform = function () {};
   bullet.draw = function () {
     if (this.visible) {
-      canvas.fillEllipse(this.x-1, this.y-1, 2, 2);
+      context.save();
+      context.lineWidth = 2;
+      context.beginPath();
+      context.moveTo(this.x-1, this.y-1);
+      context.lineTo(this.x+1, this.y+1);
+      context.moveTo(this.x+1, this.y-1);
+      context.lineTo(this.x-1, this.y+1);
+      context.stroke();
+      context.restore();
     }
   };
   bullet.preMove = function (delta) {
@@ -236,7 +208,7 @@ $(function () {
     }
   };
 
-  var asteroid = new Sprite(canvas,
+  var asteroid = new Sprite(context,
                             "asteroid",
                             [-10,   0,
                               -5,   7,
@@ -247,8 +219,7 @@ $(function () {
                                5,  -6,
                                2, -10,
                               -4, -10,
-                              -4,  -5,
-                             -10,   0], 20);
+                              -4,  -5], 20);
 
   asteroid.visible = true;
   asteroid.scale = 6;
@@ -362,7 +333,7 @@ $(function () {
   var delta;
 
   var mainLoop = function () {
-    canvas.fillRect(0, 0, canvasWidth, canvasHeight, {color:'white'});
+    context.clearRect(0, 0, canvasWidth, canvasHeight);
 
     thisFrame = new Date();
     elapsed = thisFrame - lastFrame;
