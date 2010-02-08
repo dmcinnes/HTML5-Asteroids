@@ -127,6 +127,89 @@ Sprite = function (context, name, points, diameter) {
 
 };
 
+var spriteDefs = {
+  ship: function (context) {
+    var ship = new Sprite(context,
+                          "ship",
+                          [-5,   4,
+                            0, -12,
+                            5,   4], 12);
+
+    ship.children.exhaust = new Sprite(context,
+                                       "exhaust",
+                                       [-3,  6,
+                                         0, 11,
+                                         3,  6]);
+
+    ship.visible = true;
+
+    ship.bulletCounter = 0;
+
+    ship.collision = function (other) {
+      if (other.name == "asteroid") {
+        this.visible = false;
+      }
+    };
+
+    return ship;
+  },
+  bullet: function (context) {
+    var bullet = new Sprite(context, "bullet");
+    bullet.time = 0;
+
+    bullet.configureTransform = function () {};
+    bullet.draw = function () {
+      if (this.visible) {
+        context.save();
+        context.lineWidth = 2;
+        context.beginPath();
+        context.moveTo(this.x-1, this.y-1);
+        context.lineTo(this.x+1, this.y+1);
+        context.moveTo(this.x+1, this.y-1);
+        context.lineTo(this.x-1, this.y+1);
+        context.stroke();
+        context.restore();
+      }
+    };
+    bullet.preMove = function (delta) {
+      if (this.visible) {
+        this.time += delta;
+      }
+      if (this.time > 50) {
+        this.visible = false;
+        this.time = 0;
+      }
+    };
+    bullet.collision = function (other) {
+      if (other.name == "asteroid") {
+        this.visible = false;
+        this.time = 0;
+      }
+    };
+
+    return bullet;
+  },
+  asteroid: function (context) {
+    var asteroid = new Sprite(context,
+                              "asteroid",
+                              [-10,   0,
+                                -5,   7,
+                                -3,   4,
+                                 1,  10,
+                                 5,   4,
+                                10,   0,
+                                 5,  -6,
+                                 2, -10,
+                                -4, -10,
+                                -4,  -5], 20);
+
+    asteroid.visible = true;
+    asteroid.scale = 6;
+
+    return asteroid;
+  }
+};
+
 
 $(function () {
   var canvas = $("#canvas");
@@ -151,79 +234,17 @@ $(function () {
     }
   };
 
-  var ship = new Sprite(context,
-                        "ship",
-                        [-5,   4,
-                          0, -12,
-                          5,   4], 12);
+  var ship     = spriteDefs.ship(context);
+  var bullet   = spriteDefs.bullet(context);
+  var asteroid = spriteDefs.asteroid(context);
 
-  ship.children.exhaust = new Sprite(context,
-                                     "exhaust",
-                                     [-3,  6,
-                                       0, 11,
-                                       3,  6]);
+  ship.postMove     = wrapPostMove;
+  bullet.postMove   = wrapPostMove;
+  asteroid.postMove = wrapPostMove;
 
   ship.x = canvasWidth / 2;
   ship.y = canvasHeight / 2;
 
-  ship.visible = true;
-
-  ship.collision = function (other) {
-    if (other.name == "asteroid") {
-      this.visible = false;
-    }
-  };
-
-  var bullet = new Sprite(context, "bullet");
-  bullet.time = 0;
-
-  bullet.configureTransform = function () {};
-  bullet.draw = function () {
-    if (this.visible) {
-      context.save();
-      context.lineWidth = 2;
-      context.beginPath();
-      context.moveTo(this.x-1, this.y-1);
-      context.lineTo(this.x+1, this.y+1);
-      context.moveTo(this.x+1, this.y-1);
-      context.lineTo(this.x-1, this.y+1);
-      context.stroke();
-      context.restore();
-    }
-  };
-  bullet.preMove = function (delta) {
-    if (this.visible) {
-      this.time += delta;
-    }
-    if (this.time > 50) {
-      this.visible = false;
-      this.time = 0;
-    }
-  };
-  bullet.postMove = wrapPostMove;
-  bullet.collision = function (other) {
-    if (other.name == "asteroid") {
-      this.visible = false;
-      this.time = 0;
-    }
-  };
-
-  var asteroid = new Sprite(context,
-                            "asteroid",
-                            [-10,   0,
-                              -5,   7,
-                              -3,   4,
-                               1,  10,
-                               5,   4,
-                              10,   0,
-                               5,  -6,
-                               2, -10,
-                              -4, -10,
-                              -4,  -5], 20);
-
-  asteroid.visible = true;
-  asteroid.scale = 6;
-  asteroid.postMove = wrapPostMove;
   asteroid.collision = function (other) {
     if (other.name == "asteroid") return;
     this.scale /= 3;
@@ -266,8 +287,6 @@ $(function () {
     roid.vel.rot = Math.random() * 2 - 1;
     sprites.push(roid);
   }
-
-  ship.bulletCounter = 0;
 
   ship.preMove = function (delta) {
     if (KEY_STATUS.left) {
@@ -320,8 +339,6 @@ $(function () {
     }
   };
 
-  ship.postMove = wrapPostMove;
-
   var i, j = 0;
   var showFramerate = false;
   var avgFramerate = 30;
@@ -352,7 +369,8 @@ $(function () {
     }
 
     if (showFramerate) {
-      avgFramerate = Math.round((avgFramerate * 9 + (1000 / elapsed)) / 10);
+      avgFramerate = Math.round((avgFramerate * 9 + (1000 / elapsed))
+                                / 10);
       framerate.text(avgFramerate);
     }
 
