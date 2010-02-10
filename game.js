@@ -387,10 +387,12 @@ $(function () {
     }
   };
 
+  context.font = "18px Ariel";
+  context.textAlign = "right";
+
   var i, j = 0;
   var showFramerate = false;
   var avgFramerate = 30;
-  var framerate = $('#framerate');
 
   var lastFrame = new Date();
   var thisFrame;
@@ -424,9 +426,8 @@ $(function () {
     if (showFramerate) {
       avgFramerate = Math.round((avgFramerate * 9 + (1000 / elapsed))
                                 / 10);
-      framerate.text(avgFramerate);
+      context.fillText(avgFramerate, canvasWidth - 2, canvasHeight - 2);
     }
-
   };
 
   var mainLoopId = setInterval(mainLoop, 10);
@@ -434,9 +435,6 @@ $(function () {
   $(window).keydown(function (e) {
     if (KEY_CODES[e.keyCode] == 'f') {
       showFramerate = !showFramerate;
-      if (!showFramerate) {
-        framerate.text('');
-      }
     }
   });
 
