@@ -259,8 +259,13 @@ $(function () {
 
   var sprites = [];
 
+  var ship      = spriteDefs.ship(context);
+  var bullet    = spriteDefs.bullet(context);
+  var asteroid  = spriteDefs.asteroid(context);
+
   var wrapPostMove = function () {
-    var buffer = this.scale * this.diameter;
+    // asteroid is the biggest
+    var buffer = asteroid.scale * asteroid.diameter / 2;
     if (this.x - buffer > canvasWidth) {
       this.x = -buffer;
     } else if (this.x + buffer < 0) {
@@ -272,10 +277,6 @@ $(function () {
       this.y = canvasHeight + buffer;
     }
   };
-
-  var ship      = spriteDefs.ship(context);
-  var bullet    = spriteDefs.bullet(context);
-  var asteroid  = spriteDefs.asteroid(context);
 
   ship.postMove     = wrapPostMove;
   bullet.postMove   = wrapPostMove;
