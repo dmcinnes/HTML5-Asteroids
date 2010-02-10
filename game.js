@@ -289,12 +289,9 @@ $(function () {
     if (other.name == "ship" ||
         other.name == "bullet") {
       this.scale /= 3;
-      if (this.scale < 0.5) {
-        this.visible = false;
-        this.reap = true;
-      } else {
+      if (this.scale > 0.5) {
         // break into fragments
-        for (var i = 0; i < 2; i++) {
+        for (var i = 0; i < 3; i++) {
           var roid = $.extend(true, {}, this);
           roid.vel.x = Math.random() * 6 - 3;
           roid.vel.y = Math.random() * 6 - 3;
@@ -302,9 +299,12 @@ $(function () {
             roid.points.reverse();
           }
           roid.vel.rot = Math.random() * 2 - 1;
+          roid.move(roid.scale * 3); // give them a little push
           sprites.push(roid);
         }
       }
+      this.visible = false;
+      this.reap = true;
       var splosion = spriteDefs.explosion(context);
       splosion.x = other.x;
       splosion.y = other.y;
