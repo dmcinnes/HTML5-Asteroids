@@ -27,6 +27,7 @@ Sprite = function (context, name, points, diameter) {
   this.children = {};
 
   this.visible = false;
+  this.reap    = false;
 
   this.x     = 0;
   this.y     = 0;
@@ -207,6 +208,44 @@ var spriteDefs = {
     asteroid.scale = 6;
 
     return asteroid;
+  },
+  explosion: function (context) {
+    var explosion = new Sprite(context, "explosion");
+
+    explosion.lines = [];
+    for (var i = 0; i < 5; i++) {
+      var rad = 2 * Math.PI * Math.random();
+      var x = Math.cos(rad);
+      var y = Math.sin(rad);
+      explosion.lines.push([x, y, x*2, y*2]);
+    }
+
+    explosion.draw = function () {
+      if (this.visible) {
+        context.save();
+        context.lineWidth = 1.0 / this.scale;
+        context.beginPath();
+        for (var i = 0; i < 5; i++) {
+          var line = this.lines[i];
+          context.moveTo(line[0], line[1]);
+          context.lineTo(line[2], line[3]);
+        }
+        context.stroke();
+        context.restore();
+      }
+    };
+
+    explosion.preMove = function (delta) {
+      if (this.visible) {
+        this.scale += delta;
+      }
+      if (this.scale > 8) {
+        this.visible = false;
+        this.reap = true;
+      }
+    };
+
+    return explosion;
   }
 };
 
@@ -234,9 +273,9 @@ $(function () {
     }
   };
 
-  var ship     = spriteDefs.ship(context);
-  var bullet   = spriteDefs.bullet(context);
-  var asteroid = spriteDefs.asteroid(context);
+  var ship      = spriteDefs.ship(context);
+  var bullet    = spriteDefs.bullet(context);
+  var asteroid  = spriteDefs.asteroid(context);
 
   ship.postMove     = wrapPostMove;
   bullet.postMove   = wrapPostMove;
@@ -246,22 +285,30 @@ $(function () {
   ship.y = canvasHeight / 2;
 
   asteroid.collision = function (other) {
-    if (other.name == "asteroid") return;
-    this.scale /= 3;
-    if (this.scale < 0.5) {
-      this.visible = false;
-    } else {
-      // break into fragments
-      for (var i = 0; i < 2; i++) {
-        var roid = $.extend(true, {}, this);
-        roid.vel.x = Math.random() * 6 - 3;
-        roid.vel.y = Math.random() * 6 - 3;
-        if (Math.random() > 0.5) {
-          roid.points.reverse();
+    if (other.name == "ship" ||
+        other.name == "bullet") {
+      this.scale /= 3;
+      if (this.scale < 0.5) {
+        this.visible = false;
+        this.reap = true;
+      } else {
+        // break into fragments
+        for (var i = 0; i < 2; i++) {
+          var roid = $.extend(true, {}, this);
+          roid.vel.x = Math.random() * 6 - 3;
+          roid.vel.y = Math.random() * 6 - 3;
+          if (Math.random() > 0.5) {
+            roid.points.reverse();
+          }
+          roid.vel.rot = Math.random() * 2 - 1;
+          sprites.push(roid);
         }
-        roid.vel.rot = Math.random() * 2 - 1;
-        sprites.push(roid);
       }
+      var splosion = spriteDefs.explosion(context);
+      splosion.x = other.x;
+      splosion.y = other.y;
+      splosion.visible = true;
+      sprites.push(splosion);
     }
   };
 
@@ -365,6 +412,11 @@ $(function () {
         if (i != j && sprites[i].name != sprites[j].name) {
           sprites[i].checkCollision(sprites[j]);
         }
+      }
+
+      if (sprites[i].reap) {
+        sprites.splice(i, 1);
+        i--;
       }
     }
 
