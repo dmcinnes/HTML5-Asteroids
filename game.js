@@ -18,11 +18,25 @@ $(window).keydown(function (e) {
   KEY_STATUS[KEY_CODES[e.keyCode]] = false;
 });
 
-Sprite = function (context, name, points, diameter) {
-  this.context   = context;
-  this.name     = name;
-  this.points   = points;
-  this.diameter = diameter || 1;
+Sprite = function () {
+  this.init = function (context, name, points, diameter) {
+    this.context   = context;
+    this.name     = name;
+    this.points   = points;
+    this.diameter = diameter || 1;
+
+    this.vel = {
+      x:   0,
+      y:   0,
+      rot: 0
+    };
+
+    this.acc = {
+      x:   0,
+      y:   0,
+      rot: 0
+    };
+  };
 
   this.children = {};
 
@@ -34,29 +48,17 @@ Sprite = function (context, name, points, diameter) {
   this.rot   = 0;
   this.scale = 1;
 
-  this.vel = {
-    x:   0,
-    y:   0,
-    rot: 0
-  };
-
-  this.acc = {
-    x:   0,
-    y:   0,
-    rot: 0
-  };
-
   this.preMove = null;
   this.postMove = null;
 
   this.run = function(delta) {
-    context.save();
+    this.context.save();
 
     this.move(delta);
     this.configureTransform();
     this.draw();
 
-    context.restore();
+    this.context.restore();
   };
 
   this.move = function (delta) {
@@ -87,27 +89,27 @@ Sprite = function (context, name, points, diameter) {
 
     var rad = (this.rot * Math.PI)/180;
 
-    context.translate(this.x, this.y);
-    context.rotate(rad);
-    context.scale(this.scale, this.scale);
+    this.context.translate(this.x, this.y);
+    this.context.rotate(rad);
+    this.context.scale(this.scale, this.scale);
   };
 
   this.draw = function () {
     if (!this.visible) return;
 
-    context.lineWidth = 1.0 / this.scale;
+    this.context.lineWidth = 1.0 / this.scale;
 
-    context.beginPath();
+    this.context.beginPath();
 
-    context.moveTo(this.points[0], this.points[1]);
+    this.context.moveTo(this.points[0], this.points[1]);
     for (var i = 1; i < this.points.length/2; i++) {
       var xi = i*2;
       var yi = xi + 1;
-      context.lineTo(this.points[xi], this.points[yi]);
+      this.context.lineTo(this.points[xi], this.points[yi]);
     }
 
-    context.closePath();
-    context.stroke();
+    this.context.closePath();
+    this.context.stroke();
 
     for (child in this.children) {
       this.children[child].draw();
@@ -128,215 +130,25 @@ Sprite = function (context, name, points, diameter) {
 
 };
 
-var spriteDefs = {
-  ship: function (context) {
-    var ship = new Sprite(context,
-                          "ship",
-                          [-5,   4,
-                            0, -12,
-                            5,   4], 12);
+var Ship = function (context) {
+  this.init(context,
+            "ship",
+            [-5,   4,
+              0, -12,
+              5,   4], 12);
 
-    ship.children.exhaust = new Sprite(context,
-                                       "exhaust",
-                                       [-3,  6,
-                                         0, 11,
-                                         3,  6]);
+  this.children.exhaust = new Sprite();
+  this.children.exhaust.init(context,
+                             "exhaust",
+                             [-3,  6,
+                               0, 11,
+                               3,  6]);
 
-    ship.visible = true;
+  this.visible = true;
 
-    ship.bulletCounter = 0;
+  this.bulletCounter = 0;
 
-    ship.collision = function (other) {
-      if (other.name == "asteroid") {
-        this.visible = false;
-      }
-    };
-
-    return ship;
-  },
-  bullet: function (context) {
-    var bullet = new Sprite(context, "bullet");
-    bullet.time = 0;
-
-    bullet.configureTransform = function () {};
-    bullet.draw = function () {
-      if (this.visible) {
-        context.save();
-        context.lineWidth = 2;
-        context.beginPath();
-        context.moveTo(this.x-1, this.y-1);
-        context.lineTo(this.x+1, this.y+1);
-        context.moveTo(this.x+1, this.y-1);
-        context.lineTo(this.x-1, this.y+1);
-        context.stroke();
-        context.restore();
-      }
-    };
-    bullet.preMove = function (delta) {
-      if (this.visible) {
-        this.time += delta;
-      }
-      if (this.time > 50) {
-        this.visible = false;
-        this.time = 0;
-      }
-    };
-    bullet.collision = function (other) {
-      if (other.name == "asteroid") {
-        this.visible = false;
-        this.time = 0;
-      }
-    };
-
-    return bullet;
-  },
-  asteroid: function (context) {
-    var asteroid = new Sprite(context,
-                              "asteroid",
-                              [-10,   0,
-                                -5,   7,
-                                -3,   4,
-                                 1,  10,
-                                 5,   4,
-                                10,   0,
-                                 5,  -6,
-                                 2, -10,
-                                -4, -10,
-                                -4,  -5], 20);
-
-    asteroid.visible = true;
-    asteroid.scale = 6;
-
-    return asteroid;
-  },
-  explosion: function (context) {
-    var explosion = new Sprite(context, "explosion");
-
-    explosion.lines = [];
-    for (var i = 0; i < 5; i++) {
-      var rad = 2 * Math.PI * Math.random();
-      var x = Math.cos(rad);
-      var y = Math.sin(rad);
-      explosion.lines.push([x, y, x*2, y*2]);
-    }
-
-    explosion.draw = function () {
-      if (this.visible) {
-        context.save();
-        context.lineWidth = 1.0 / this.scale;
-        context.beginPath();
-        for (var i = 0; i < 5; i++) {
-          var line = this.lines[i];
-          context.moveTo(line[0], line[1]);
-          context.lineTo(line[2], line[3]);
-        }
-        context.stroke();
-        context.restore();
-      }
-    };
-
-    explosion.preMove = function (delta) {
-      if (this.visible) {
-        this.scale += delta;
-      }
-      if (this.scale > 8) {
-        this.visible = false;
-        this.reap = true;
-      }
-    };
-
-    return explosion;
-  }
-};
-
-
-$(function () {
-  var canvas = $("#canvas");
-  var canvasWidth  = canvas.width();
-  var canvasHeight = canvas.height();
-
-  var context = canvas[0].getContext("2d");
-
-  var sprites = [];
-
-  var ship      = spriteDefs.ship(context);
-  var bullet    = spriteDefs.bullet(context);
-  var asteroid  = spriteDefs.asteroid(context);
-
-  var wrapPostMove = function () {
-    // asteroid is the biggest
-    var buffer = asteroid.scale * asteroid.diameter / 2;
-    if (this.x - buffer > canvasWidth) {
-      this.x = -buffer;
-    } else if (this.x + buffer < 0) {
-      this.x = canvasWidth + buffer;
-    }
-    if (this.y - buffer > canvasHeight) {
-      this.y = -buffer;
-    } else if (this.y + buffer < 0) {
-      this.y = canvasHeight + buffer;
-    }
-  };
-
-  ship.postMove     = wrapPostMove;
-  bullet.postMove   = wrapPostMove;
-  asteroid.postMove = wrapPostMove;
-
-  ship.x = canvasWidth / 2;
-  ship.y = canvasHeight / 2;
-
-  asteroid.collision = function (other) {
-    if (other.name == "ship" ||
-        other.name == "bullet") {
-      this.scale /= 3;
-      if (this.scale > 0.5) {
-        // break into fragments
-        for (var i = 0; i < 3; i++) {
-          var roid = $.extend(true, {}, this);
-          roid.vel.x = Math.random() * 6 - 3;
-          roid.vel.y = Math.random() * 6 - 3;
-          if (Math.random() > 0.5) {
-            roid.points.reverse();
-          }
-          roid.vel.rot = Math.random() * 2 - 1;
-          roid.move(roid.scale * 3); // give them a little push
-          sprites.push(roid);
-        }
-      }
-      this.visible = false;
-      this.reap = true;
-      var splosion = spriteDefs.explosion(context);
-      splosion.x = other.x;
-      splosion.y = other.y;
-      splosion.visible = true;
-      sprites.push(splosion);
-    }
-  };
-
-  sprites.push(ship);
-  sprites.push(bullet);
-
-  ship.bullets = [bullet];
-  for (var i = 0; i < 9; i++) {
-    var bull = $.extend(true, {}, bullet);
-    ship.bullets.push(bull);
-    sprites.push(bull);
-  }
-
-  for (var i = 0; i < 3; i++) {
-    var roid = $.extend(true, {}, asteroid);
-    roid.x = Math.random() * canvasWidth;
-    roid.y = Math.random() * canvasHeight;
-    roid.vel.x = Math.random() * 4 - 2;
-    roid.vel.y = Math.random() * 4 - 2;
-    if (Math.random() > 0.5) {
-      roid.points.reverse();
-    }
-    roid.vel.rot = Math.random() * 2 - 1;
-    sprites.push(roid);
-  }
-
-  ship.preMove = function (delta) {
+  this.preMove = function (delta) {
     if (KEY_STATUS.left) {
       this.vel.rot = -5;
     } else if (KEY_STATUS.right) {
@@ -362,9 +174,9 @@ $(function () {
     if (KEY_STATUS.space) {
       if (this.bulletCounter <= 0) {
         this.bulletCounter = 6;
-        for (var i = 0; i < ship.bullets.length; i++) {
-          if (!ship.bullets[i].visible) {
-            var bullet = ship.bullets[i];
+        for (var i = 0; i < this.bullets.length; i++) {
+          if (!this.bullets[i].visible) {
+            var bullet = this.bullets[i];
             var rad = ((this.rot-90) * Math.PI)/180;
             var vectorx = Math.cos(rad);
             var vectory = Math.sin(rad);
@@ -381,11 +193,199 @@ $(function () {
     }
 
     // limit the ship's speed
-    if (Math.sqrt(ship.vel.x * ship.vel.x + ship.vel.y * ship.vel.y) > 8) {
-      ship.vel.x *= 0.95;
-      ship.vel.y *= 0.95;
+    if (Math.sqrt(this.vel.x * this.vel.x + this.vel.y * this.vel.y) > 8) {
+      this.vel.x *= 0.95;
+      this.vel.y *= 0.95;
     }
   };
+
+  this.collision = function (other) {
+    if (other.name == "asteroid") {
+      this.visible = false;
+    }
+  };
+
+};
+Ship.prototype = new Sprite();
+
+var Bullet = function (context) {
+  this.init(context, "bullet");
+  this.time = 0;
+
+  this.configureTransform = function () {};
+  this.draw = function () {
+    if (this.visible) {
+      context.save();
+      context.lineWidth = 2;
+      context.beginPath();
+      context.moveTo(this.x-1, this.y-1);
+      context.lineTo(this.x+1, this.y+1);
+      context.moveTo(this.x+1, this.y-1);
+      context.lineTo(this.x-1, this.y+1);
+      context.stroke();
+      context.restore();
+    }
+  };
+  this.preMove = function (delta) {
+    if (this.visible) {
+      this.time += delta;
+    }
+    if (this.time > 50) {
+      this.visible = false;
+      this.time = 0;
+    }
+  };
+  this.collision = function (other) {
+    if (other.name == "asteroid") {
+      this.visible = false;
+      this.time = 0;
+    }
+  };
+
+};
+Bullet.prototype = new Sprite();
+
+var Asteroid = function (context) {
+  this.init(context,
+            "asteroid",
+            [-10,   0,
+              -5,   7,
+              -3,   4,
+               1,  10,
+               5,   4,
+              10,   0,
+               5,  -6,
+               2, -10,
+              -4, -10,
+              -4,  -5], 20);
+
+  this.visible = true;
+  this.scale = 6;
+
+};
+Asteroid.prototype = new Sprite();
+
+var Explosion = function (context) {
+  this.init(context, "explosion");
+
+  this.lines = [];
+  for (var i = 0; i < 5; i++) {
+    var rad = 2 * Math.PI * Math.random();
+    var x = Math.cos(rad);
+    var y = Math.sin(rad);
+    this.lines.push([x, y, x*2, y*2]);
+  }
+
+  this.draw = function () {
+    if (this.visible) {
+      context.save();
+      context.lineWidth = 1.0 / this.scale;
+      context.beginPath();
+      for (var i = 0; i < 5; i++) {
+        var line = this.lines[i];
+        context.moveTo(line[0], line[1]);
+        context.lineTo(line[2], line[3]);
+      }
+      context.stroke();
+      context.restore();
+    }
+  };
+
+  this.preMove = function (delta) {
+    if (this.visible) {
+      this.scale += delta;
+    }
+    if (this.scale > 8) {
+      this.visible = false;
+      this.reap = true;
+    }
+  };
+
+};
+Explosion.prototype = new Sprite();
+
+
+$(function () {
+  var canvas = $("#canvas");
+  var canvasWidth  = canvas.width();
+  var canvasHeight = canvas.height();
+
+  var context = canvas[0].getContext("2d");
+
+  var sprites = [];
+
+  var wrapPostMove = function () {
+    var buffer = 60; // half an asteroid
+    if (this.x - buffer > canvasWidth) {
+      this.x = -buffer;
+    } else if (this.x + buffer < 0) {
+      this.x = canvasWidth + buffer;
+    }
+    if (this.y - buffer > canvasHeight) {
+      this.y = -buffer;
+    } else if (this.y + buffer < 0) {
+      this.y = canvasHeight + buffer;
+    }
+  };
+
+  Ship.prototype.postMove     = wrapPostMove;
+  Bullet.prototype.postMove   = wrapPostMove;
+  Asteroid.prototype.postMove = wrapPostMove;
+
+  Asteroid.prototype.collision = function (other) {
+    if (other.name == "ship" ||
+        other.name == "bullet") {
+      this.scale /= 3;
+      if (this.scale > 0.5) {
+        // break into fragments
+        for (var i = 0; i < 3; i++) {
+          var roid = $.extend(true, {}, this);
+          roid.vel.x = Math.random() * 6 - 3;
+          roid.vel.y = Math.random() * 6 - 3;
+          if (Math.random() > 0.5) {
+            roid.points.reverse();
+          }
+          roid.vel.rot = Math.random() * 2 - 1;
+          roid.move(roid.scale * 3); // give them a little push
+          sprites.push(roid);
+        }
+      }
+      this.visible = false;
+      this.reap = true;
+      var splosion = new Explosion(context);
+      splosion.x = other.x;
+      splosion.y = other.y;
+      splosion.visible = true;
+      sprites.push(splosion);
+    }
+  };
+
+  var ship = new Ship(context);
+
+  ship.x = canvasWidth / 2;
+  ship.y = canvasHeight / 2;
+
+  sprites.push(ship);
+
+  ship.bullets = [];
+  for (var i = 0; i < 10; i++) {
+    var bull = new Bullet(context);
+    ship.bullets.push(bull);
+    sprites.push(bull);
+  }
+
+  for (var i = 0; i < 3; i++) {
+    var roid = new Asteroid(context);
+    roid.x = Math.random() * canvasWidth;
+    roid.y = Math.random() * canvasHeight;
+    roid.vel.x = Math.random() * 4 - 2;
+    roid.vel.y = Math.random() * 4 - 2;
+    if (Math.random() > 0.5) {
+      roid.points.reverse();
+    }
+    roid.vel.rot = Math.random() * 2 - 1;
+    sprites.push(roid);
+  }
 
   context.font = "18px Ariel";
   context.textAlign = "right";
