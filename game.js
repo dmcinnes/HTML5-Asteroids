@@ -4,6 +4,7 @@ KEY_CODES = {
   38: 'up',
   39: 'right',
   70: 'f',
+  71: 'g',
   72: 'h'
 }
 
@@ -18,9 +19,10 @@ $(window).keydown(function (e) {
   KEY_STATUS[KEY_CODES[e.keyCode]] = false;
 });
 
+GRID_SIZE = 60;
+
 Sprite = function () {
-  this.init = function (context, name, points, diameter) {
-    this.context   = context;
+  this.init = function (name, points, diameter) {
     this.name     = name;
     this.points   = points;
     this.diameter = diameter || 1;
@@ -48,13 +50,17 @@ Sprite = function () {
   this.rot   = 0;
   this.scale = 1;
 
-  this.preMove = null;
+  this.currentNode = null;
+  this.nextSprite  = null;
+
+  this.preMove  = null;
   this.postMove = null;
 
   this.run = function(delta) {
     this.context.save();
 
     this.move(delta);
+    this.updateGrid();
     this.configureTransform();
     this.draw();
 
@@ -81,6 +87,23 @@ Sprite = function () {
 
     if ($.isFunction(this.postMove)) {
       this.postMove(delta);
+    }
+  };
+
+  this.updateGrid = function () {
+    if (!this.visible) return;
+    // +1 to take into account the border
+    var gridx = Math.floor(this.x / GRID_SIZE) + 1;
+    var gridy = Math.floor(this.y / GRID_SIZE) + 1;
+    gridx = (gridx >= this.grid.length) ? 0 : gridx;
+    gridy = (gridy >= this.grid[0].length) ? 0 : gridy;
+    var newNode = this.grid[gridx][gridy];
+    if (newNode != this.currentNode) {
+      if (this.currentNode) {
+        this.currentNode.leave(this);
+      }
+      newNode.enter(this);
+      this.currentNode = newNode;
     }
   };
 
@@ -128,18 +151,23 @@ Sprite = function () {
   this.collision = function () {
   };
 
+  this.die = function () {
+    this.visible = false;
+    this.reap = true;
+    this.currentNode.leave(this);
+    this.currentNode = null;
+  };
+
 };
 
-var Ship = function (context) {
-  this.init(context,
-            "ship",
+var Ship = function () {
+  this.init("ship",
             [-5,   4,
               0, -12,
               5,   4], 12);
 
   this.children.exhaust = new Sprite();
-  this.children.exhaust.init(context,
-                             "exhaust",
+  this.children.exhaust.init("exhaust",
                              [-3,  6,
                                0, 11,
                                3,  6]);
@@ -201,29 +229,29 @@ var Ship = function (context) {
 
   this.collision = function (other) {
     if (other.name == "asteroid") {
-      this.visible = false;
+      this.die();
     }
   };
 
 };
 Ship.prototype = new Sprite();
 
-var Bullet = function (context) {
-  this.init(context, "bullet");
+var Bullet = function () {
+  this.init("bullet");
   this.time = 0;
 
   this.configureTransform = function () {};
   this.draw = function () {
     if (this.visible) {
-      context.save();
-      context.lineWidth = 2;
-      context.beginPath();
-      context.moveTo(this.x-1, this.y-1);
-      context.lineTo(this.x+1, this.y+1);
-      context.moveTo(this.x+1, this.y-1);
-      context.lineTo(this.x-1, this.y+1);
-      context.stroke();
-      context.restore();
+      this.context.save();
+      this.context.lineWidth = 2;
+      this.context.beginPath();
+      this.context.moveTo(this.x-1, this.y-1);
+      this.context.lineTo(this.x+1, this.y+1);
+      this.context.moveTo(this.x+1, this.y-1);
+      this.context.lineTo(this.x-1, this.y+1);
+      this.context.stroke();
+      this.context.restore();
     }
   };
   this.preMove = function (delta) {
@@ -238,16 +266,16 @@ var Bullet = function (context) {
   this.collision = function (other) {
     if (other.name == "asteroid") {
       this.visible = false;
-      this.time = 0;
+      this.currentNode.leave(this);
+      this.currentNode = null;
     }
   };
 
 };
 Bullet.prototype = new Sprite();
 
-var Asteroid = function (context) {
-  this.init(context,
-            "asteroid",
+var Asteroid = function () {
+  this.init("asteroid",
             [-10,   0,
               -5,   7,
               -3,   4,
@@ -265,8 +293,8 @@ var Asteroid = function (context) {
 };
 Asteroid.prototype = new Sprite();
 
-var Explosion = function (context) {
-  this.init(context, "explosion");
+var Explosion = function () {
+  this.init("explosion");
 
   this.lines = [];
   for (var i = 0; i < 5; i++) {
@@ -278,16 +306,16 @@ var Explosion = function (context) {
 
   this.draw = function () {
     if (this.visible) {
-      context.save();
-      context.lineWidth = 1.0 / this.scale;
-      context.beginPath();
+      this.context.save();
+      this.context.lineWidth = 1.0 / this.scale;
+      this.context.beginPath();
       for (var i = 0; i < 5; i++) {
         var line = this.lines[i];
-        context.moveTo(line[0], line[1]);
-        context.lineTo(line[2], line[3]);
+        this.context.moveTo(line[0], line[1]);
+        this.context.lineTo(line[2], line[3]);
       }
-      context.stroke();
-      context.restore();
+      this.context.stroke();
+      this.context.restore();
     }
   };
 
@@ -296,13 +324,37 @@ var Explosion = function (context) {
       this.scale += delta;
     }
     if (this.scale > 8) {
-      this.visible = false;
-      this.reap = true;
+      this.die();
     }
   };
 
 };
 Explosion.prototype = new Sprite();
+
+var GridNode = function () {
+  this.north = null;
+  this.south = null;
+  this.east  = null;
+  this.west  = null;
+
+  this.nextSprite = null;
+
+  this.enter = function (sprite) {
+    sprite.nextSprite = this.nextSprite;
+    this.nextSprite = sprite;
+  };
+
+  this.leave = function (sprite) {
+    var ref = this;
+    while (ref && (ref.nextSprite != sprite)) {
+      ref = ref.nextSprite;
+    }
+    if (ref) {
+      ref.nextSprite = sprite.nextSprite;
+      sprite.nextSprite = null;
+    }
+  };
+};
 
 
 $(function () {
@@ -312,19 +364,45 @@ $(function () {
 
   var context = canvas[0].getContext("2d");
 
+  // + 2 for border
+  // we have a GRID_SIZE width border around the outside
+  var gridWidth = Math.round(canvasWidth / GRID_SIZE) + 2;
+  var gridHeight = Math.round(canvasHeight / GRID_SIZE) + 2;
+  var grid = new Array(gridWidth);
+  for (var i = 0; i < gridWidth; i++) {
+    grid[i] = new Array(gridHeight);
+    for (var j = 0; j < gridHeight; j++) {
+      grid[i][j] = new GridNode();
+    }
+  }
+
+  // set up the positional references
+  for (var i = 0; i < gridWidth; i++) {
+    for (var j = 0; j < gridHeight; j++) {
+      var node   = grid[i][j];
+      node.north = grid[i][(j == 0) ? gridHeight-1 : j-1];
+      node.south = grid[i][(j == gridHeight-1) ? 0 : j+1];
+      node.west  = grid[(i == 0) ? gridWidth-1 : i-1][j];
+      node.east  = grid[(i == gridWidth-1) ? 0 : i+1][j];
+    }
+  }
+
+  // so all the sprites can use it
+  Sprite.prototype.context = context;
+  Sprite.prototype.grid = grid;
+
   var sprites = [];
 
   var wrapPostMove = function () {
-    var buffer = 60; // half an asteroid
-    if (this.x - buffer > canvasWidth) {
-      this.x = -buffer;
-    } else if (this.x + buffer < 0) {
-      this.x = canvasWidth + buffer;
+    if (this.x - GRID_SIZE > canvasWidth) {
+      this.x = -GRID_SIZE;
+    } else if (this.x + GRID_SIZE < 0) {
+      this.x = canvasWidth + GRID_SIZE;
     }
-    if (this.y - buffer > canvasHeight) {
-      this.y = -buffer;
-    } else if (this.y + buffer < 0) {
-      this.y = canvasHeight + buffer;
+    if (this.y - GRID_SIZE > canvasHeight) {
+      this.y = -GRID_SIZE;
+    } else if (this.y + GRID_SIZE < 0) {
+      this.y = canvasHeight + GRID_SIZE;
     }
   };
 
@@ -350,17 +428,16 @@ $(function () {
           sprites.push(roid);
         }
       }
-      this.visible = false;
-      this.reap = true;
-      var splosion = new Explosion(context);
+      var splosion = new Explosion();
       splosion.x = other.x;
       splosion.y = other.y;
       splosion.visible = true;
       sprites.push(splosion);
+      this.die();
     }
   };
 
-  var ship = new Ship(context);
+  var ship = new Ship();
 
   ship.x = canvasWidth / 2;
   ship.y = canvasHeight / 2;
@@ -369,13 +446,13 @@ $(function () {
 
   ship.bullets = [];
   for (var i = 0; i < 10; i++) {
-    var bull = new Bullet(context);
+    var bull = new Bullet();
     ship.bullets.push(bull);
     sprites.push(bull);
   }
 
   for (var i = 0; i < 3; i++) {
-    var roid = new Asteroid(context);
+    var roid = new Asteroid();
     roid.x = Math.random() * canvasWidth;
     roid.y = Math.random() * canvasHeight;
     roid.vel.x = Math.random() * 4 - 2;
@@ -401,6 +478,20 @@ $(function () {
 
   var mainLoop = function () {
     context.clearRect(0, 0, canvasWidth, canvasHeight);
+
+    if (KEY_STATUS.g) {
+      context.beginPath();
+      for (var i = 0; i < gridWidth; i++) {
+        context.moveTo(i * GRID_SIZE, 0);
+        context.lineTo(i * GRID_SIZE, canvasHeight);
+      }
+      for (var j = 0; j < gridHeight; j++) {
+        context.moveTo(0, j * GRID_SIZE);
+        context.lineTo(canvasWidth, j * GRID_SIZE);
+      }
+      context.closePath();
+      context.stroke();
+    }
 
     thisFrame = new Date();
     elapsed = thisFrame - lastFrame;
@@ -439,6 +530,12 @@ $(function () {
   });
 
   canvas.click(function () {
-    clearInterval(mainLoopId);
+    if (mainLoopId) {
+      clearInterval(mainLoopId);
+      mainLoopId = null;
+    } else {
+      lastFrame = new Date();
+      mainLoopId = setInterval(mainLoop, 10);
+    }
   });
 });
