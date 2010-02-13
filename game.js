@@ -280,6 +280,7 @@ var Bullet = function () {
   };
   this.collision = function (other) {
     if (other.name == "asteroid") {
+      this.time = 0;
       this.visible = false;
       this.currentNode.leave(this);
       this.currentNode = null;
