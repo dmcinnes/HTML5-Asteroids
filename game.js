@@ -57,13 +57,14 @@ Sprite = function () {
   this.postMove = null;
 
   this.run = function(delta) {
-    this.context.save();
 
     this.move(delta);
     this.updateGrid();
+    this.checkCollisions();
+
+    this.context.save();
     this.configureTransform();
     this.draw();
-
     this.context.restore();
   };
 
@@ -139,8 +140,22 @@ Sprite = function () {
     }
   };
 
+  this.checkCollisions = function () {
+    if (!this.visible || !this.currentNode) return;
+    var cn = this.currentNode;
+    cn.eachSprite(this, this.checkCollision);
+    cn.north.eachSprite(this, this.checkCollision);
+    cn.south.eachSprite(this, this.checkCollision);
+    cn.east.eachSprite(this, this.checkCollision);
+    cn.west.eachSprite(this, this.checkCollision);
+    cn.north.east.eachSprite(this, this.checkCollision);
+    cn.north.west.eachSprite(this, this.checkCollision);
+    cn.south.east.eachSprite(this, this.checkCollision);
+    cn.south.west.eachSprite(this, this.checkCollision);
+  };
+
   this.checkCollision = function (other) {
-    if (!this.visible || !other.visible) return;
+    if (!other.visible || this == other) return;
     var dist = Math.sqrt(Math.pow(other.x - this.x, 2) + Math.pow(other.y - this.y, 2));
     if (dist < this.diameter * this.scale * 0.5 + other.diameter * other.scale * 0.5) {
       this.collision(other);
@@ -354,6 +369,14 @@ var GridNode = function () {
       sprite.nextSprite = null;
     }
   };
+
+  this.eachSprite = function(sprite, callback) {
+    var ref = this;
+    while (ref.nextSprite) {
+      ref = ref.nextSprite;
+      callback.call(sprite, ref);
+    }
+  };
 };
 
 
@@ -501,12 +524,6 @@ $(function () {
     for (i = 0; i < sprites.length; i++) {
 
       sprites[i].run(delta);
-
-      for (j = 0; j < sprites.length; j++) {
-        if (i != j && sprites[i].name != sprites[j].name) {
-          sprites[i].checkCollision(sprites[j]);
-        }
-      }
 
       if (sprites[i].reap) {
         sprites.splice(i, 1);
