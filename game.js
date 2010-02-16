@@ -21,6 +21,44 @@ $(window).keydown(function (e) {
 
 GRID_SIZE = 60;
 
+Matrix = function (rows, columns) {
+  var i, j;
+  this.data = new Array(rows);
+  for (i = 0; i < rows; i++) {
+    this.data[i] = new Array(columns);
+  }
+
+  this.configure = function (rot, scale, transx, transy) {
+    var rad = (rot * Math.PI)/180;
+    var sin = Math.sin(rad) * scale;
+    var cos = Math.cos(rad) * scale;
+    this.set(cos, -sin, transx,
+             sin,  cos, transy,
+               0,    0,      1);
+  };
+
+  this.set = function () {
+    var k = 0;
+    for (i = 0; i < rows; i++) {
+      for (j = 0; j < columns; j++) {
+        this.data[i][j] = arguments[k];
+        k++;
+      }
+    }
+  }
+
+  this.multiply = function () {
+    var vector = new Array(rows);
+    for (i = 0; i < rows; i++) {
+      vector[i] = 0;
+      for (j = 0; j < columns; j++) {
+        vector[i] += this.data[i][j] * arguments[j];
+      }
+    }
+    return vector;
+  };
+};
+
 Sprite = function () {
   this.init = function (name, points, diameter) {
     this.name     = name;
@@ -60,12 +98,13 @@ Sprite = function () {
 
     this.move(delta);
     this.updateGrid();
-    this.checkCollisions();
 
     this.context.save();
     this.configureTransform();
     this.draw();
     this.context.restore();
+
+    this.checkCollisions();
   };
 
   this.move = function (delta) {
@@ -156,10 +195,15 @@ Sprite = function () {
 
   this.checkCollision = function (other) {
     if (!other.visible || this == other) return;
-    var dist = Math.sqrt(Math.pow(other.x - this.x, 2) + Math.pow(other.y - this.y, 2));
-    if (dist < this.diameter * this.scale * 0.5 + other.diameter * other.scale * 0.5) {
-      this.collision(other);
-      other.collision(this);
+    var trans = other.translatedPoints();
+    for (var i = 0; i < trans.length/2; i++) {
+      var xi = i*2;
+      var yi = xi + 1;
+      if (this.context.isPointInPath(trans[xi], trans[yi])) {
+        this.collision(other);
+        other.collision(this);
+        return;
+      }
     }
   };
 
@@ -171,6 +215,19 @@ Sprite = function () {
     this.reap = true;
     this.currentNode.leave(this);
     this.currentNode = null;
+  };
+
+  this.translatedPoints = function () {
+    this.matrix.configure(this.rot, this.scale, this.x, this.y);
+    var trans = new Array(this.points.length);
+    for (var i = 0; i < this.points.length/2; i++) {
+      var xi = i*2;
+      var yi = xi + 1;
+      var pts = this.matrix.multiply(this.points[xi], this.points[yi], 1);
+      trans[xi] = pts[0];
+      trans[yi] = pts[1];
+    }
+    return trans;
   };
 
 };
@@ -286,6 +343,9 @@ var Bullet = function () {
       this.currentNode = null;
     }
   };
+  this.translatedPoints = function () {
+    return [this.x, this.y];
+  };
 
 };
 Bullet.prototype = new Sprite();
@@ -344,6 +404,9 @@ var Explosion = function () {
     }
   };
 
+  this.translatedPoints = function () {
+    return [this.x, this.y];
+  };
 };
 Explosion.prototype = new Sprite();
 
@@ -413,7 +476,8 @@ $(function () {
 
   // so all the sprites can use it
   Sprite.prototype.context = context;
-  Sprite.prototype.grid = grid;
+  Sprite.prototype.grid    = grid;
+  Sprite.prototype.matrix  = new Matrix(3, 3);
 
   var sprites = [];
 
