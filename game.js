@@ -83,6 +83,8 @@ Sprite = function () {
   this.visible = false;
   this.reap    = false;
 
+  this.collidesWith = [];
+
   this.x     = 0;
   this.y     = 0;
   this.rot   = 0;
@@ -194,7 +196,9 @@ Sprite = function () {
   };
 
   this.checkCollision = function (other) {
-    if (!other.visible || this == other) return;
+    if (!other.visible ||
+         this == other ||
+         this.collidesWith.indexOf(other.name) == -1) return;
     var trans = other.translatedPoints();
     for (var i = 0; i < trans.length/2; i++) {
       var xi = i*2;
@@ -247,6 +251,8 @@ var Ship = function () {
   this.visible = true;
 
   this.bulletCounter = 0;
+
+  this.collidesWith = ["asteroid"];
 
   this.preMove = function (delta) {
     if (KEY_STATUS.left) {
@@ -311,6 +317,9 @@ Ship.prototype = new Sprite();
 var Bullet = function () {
   this.init("bullet");
   this.time = 0;
+  // asteroid can look for bullets so doesn't have
+  // to be other way around
+  //this.collidesWith = ["asteroid"];
 
   this.configureTransform = function () {};
   this.draw = function () {
@@ -365,6 +374,8 @@ var Asteroid = function () {
 
   this.visible = true;
   this.scale = 6;
+
+  this.collidesWith = ["ship", "bullet"];
 
 };
 Asteroid.prototype = new Sprite();
