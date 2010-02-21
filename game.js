@@ -624,7 +624,7 @@ $(function () {
     sprites.push(bull);
   }
 
-  for (var i = 0; i < 3; i++) {
+  for (var i = 0; i < 5; i++) {
     var roid = new Asteroid();
     roid.x = Math.random() * canvasWidth;
     roid.y = Math.random() * canvasHeight;
@@ -696,8 +696,8 @@ $(function () {
     }
 
     if (showFramerate) {
-      avgFramerate = Math.round((avgFramerate * 9 + (1000 / elapsed))
-                                / 10);
+      avgFramerate = Math.round((avgFramerate * 24 + (1000 / elapsed))
+                                / 25);
       Text.renderText(''+avgFramerate, 24, canvasWidth - 38, canvasHeight - 2);
     }
   };
