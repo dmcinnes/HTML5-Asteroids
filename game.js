@@ -236,7 +236,7 @@ Sprite = function () {
 
 };
 
-var Ship = function () {
+Ship = function () {
   this.init("ship",
             [-5,   4,
               0, -12,
@@ -314,7 +314,7 @@ var Ship = function () {
 };
 Ship.prototype = new Sprite();
 
-var Bullet = function () {
+Bullet = function () {
   this.init("bullet");
   this.time = 0;
   // asteroid can look for bullets so doesn't have
@@ -359,7 +359,7 @@ var Bullet = function () {
 };
 Bullet.prototype = new Sprite();
 
-var Asteroid = function () {
+Asteroid = function () {
   this.init("asteroid",
             [-10,   0,
               -5,   7,
@@ -380,7 +380,7 @@ var Asteroid = function () {
 };
 Asteroid.prototype = new Sprite();
 
-var Explosion = function () {
+Explosion = function () {
   this.init("explosion");
 
   this.lines = [];
@@ -421,7 +421,7 @@ var Explosion = function () {
 };
 Explosion.prototype = new Sprite();
 
-var GridNode = function () {
+GridNode = function () {
   this.north = null;
   this.south = null;
   this.east  = null;
@@ -454,6 +454,77 @@ var GridNode = function () {
   };
 };
 
+// borrowed from typeface-0.14.js
+// http://typeface.neocracy.org
+Text = {
+  renderGlyph: function (ctx, face, char) {
+
+    var glyph = face.glyphs[char];
+
+    if (glyph.o) {
+
+      var outline;
+      if (glyph.cached_outline) {
+        outline = glyph.cached_outline;
+      } else {
+        outline = glyph.o.split(' ');
+        glyph.cached_outline = outline;
+      }
+
+      var outlineLength = outline.length;
+      for (var i = 0; i < outlineLength; ) {
+
+        var action = outline[i++];
+
+        switch(action) {
+          case 'm':
+            ctx.moveTo(outline[i++], outline[i++]);
+            break;
+          case 'l':
+            ctx.lineTo(outline[i++], outline[i++]);
+            break;
+
+          case 'q':
+            var cpx = outline[i++];
+            var cpy = outline[i++];
+            ctx.quadraticCurveTo(outline[i++], outline[i++], cpx, cpy);
+            break;
+
+          case 'b':
+            var x = outline[i++];
+            var y = outline[i++];
+            ctx.bezierCurveTo(outline[i++], outline[i++], outline[i++], outline[i++], x, y);
+            break;
+        }
+      }
+    }
+    if (glyph.ha) {
+      ctx.translate(glyph.ha, 0);
+    }
+  },
+
+  renderText: function(text, size, x, y) {
+    this.context.save();
+
+    this.context.translate(x, y);
+
+    var pixels = size * 72 / (this.face.resolution * 100);
+    this.context.scale(pixels, -1 * pixels);
+    this.context.beginPath();
+    var chars = text.split('');
+    var charsLength = chars.length;
+    for (var i = 0; i < charsLength; i++) {
+      this.renderGlyph(this.context, this.face, chars[i]);
+    }
+    this.context.fill();
+
+    this.context.restore();
+  },
+
+  context: null,
+  face: null
+};
+
 
 $(function () {
   var canvas = $("#canvas");
@@ -461,6 +532,9 @@ $(function () {
   var canvasHeight = canvas.height();
 
   var context = canvas[0].getContext("2d");
+
+  Text.context = context;
+  Text.face = vector_battle;
 
   // + 2 for border
   // we have a GRID_SIZE width border around the outside
@@ -563,8 +637,22 @@ $(function () {
     sprites.push(roid);
   }
 
-  context.font = "18px Ariel";
-  context.textAlign = "right";
+  var FSM = {
+    waiting: function () {
+    },
+    start: function () {
+    },
+    run: function () {
+    },
+    new_level: function () {
+    },
+    player_died: function () {
+    },
+    end_game: function () {
+    },
+    current: 'waiting'
+  };
+
 
   var i, j = 0;
   var showFramerate = false;
@@ -610,7 +698,7 @@ $(function () {
     if (showFramerate) {
       avgFramerate = Math.round((avgFramerate * 9 + (1000 / elapsed))
                                 / 10);
-      context.fillText(avgFramerate, canvasWidth - 2, canvasHeight - 2);
+      Text.renderText(''+avgFramerate, 24, canvasWidth - 38, canvasHeight - 2);
     }
   };
 
