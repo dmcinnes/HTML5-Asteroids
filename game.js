@@ -560,6 +560,8 @@ $(function () {
 
   var context = canvas[0].getContext("2d");
 
+  var score = 0;
+
   Text.context = context;
   Text.face = vector_battle;
 
@@ -613,6 +615,7 @@ $(function () {
   Asteroid.prototype.collision = function (other) {
     if (other.name == "ship" ||
         other.name == "bullet") {
+      score += 120 / this.scale;
       this.scale /= 3;
       if (this.scale > 0.5) {
         // break into fragments
@@ -650,6 +653,10 @@ $(function () {
     ship.bullets.push(bull);
     sprites.push(bull);
   }
+
+  var extraDude = new Ship();
+  extraDude.scale = 0.6;
+  extraDude.visible = true;
 
   function spawnAsteroids(count) {
     for (var i = 0; i < count; i++) {
@@ -693,9 +700,9 @@ $(function () {
         }
       }
 
+      ship.lives = 2;
       totalAsteroids = 3;
       spawnAsteroids(totalAsteroids);
-      ship.lives = 2;
       this.state = 'spawn_ship';
     },
     spawn_ship: function () {
@@ -726,7 +733,9 @@ $(function () {
       // wait a second before spawning more asteroids
       if (new Date() - this.timer > 1000) {
         this.timer = null;
-        spawnAsteroids(++totalAsteroids);
+        totalAsteroids++;
+        if (totalAsteroids > 12) totalAsteroids = 12;
+        spawnAsteroids(totalAsteroids);
         this.state = 'run';
       }
     },
@@ -815,6 +824,20 @@ $(function () {
       }
     }
 
+    // score
+    var score_text = ''+score;
+    Text.renderText(score_text, 18, canvasWidth - 14 * score_text.length, 20);
+
+    // extra dudes
+    for (i = 0; i < ship.lives; i++) {
+      context.save();
+      extraDude.x = canvasWidth - (8 * (i + 1));
+      extraDude.y = 32;
+      extraDude.configureTransform();
+      extraDude.draw();
+      context.restore();
+    }
+
     if (showFramerate) {
       avgFramerate = Math.round((avgFramerate * 24 + (1000 / elapsed))
                                 / 25);
@@ -831,7 +854,7 @@ $(function () {
       if (mainLoopId) {
         clearInterval(mainLoopId);
         mainLoopId = null;
-        Text.renderText('PAUSED', 72, canvasWidth/2 - 160, canvasHeight/2 + 20);
+        Text.renderText('PAUSED', 72, canvasWidth/2 - 160, 120);
       } else {
         lastFrame = new Date();
         mainLoopId = setInterval(mainLoop, 10);
