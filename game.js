@@ -237,6 +237,27 @@ Sprite = function () {
     return trans;
   };
 
+  this.isClear = function () {
+    if (this.collidesWith.length == 0) return true;
+    var cn = this.currentNode;
+    if (cn == null) {
+      var gridx = Math.floor(this.x / GRID_SIZE) + 1;
+      var gridy = Math.floor(this.y / GRID_SIZE) + 1;
+      gridx = (gridx >= this.grid.length) ? 0 : gridx;
+      gridy = (gridy >= this.grid[0].length) ? 0 : gridy;
+      cn = this.grid[gridx][gridy];
+    }
+    return (cn.isEmpty(this.collidesWith) &&
+            cn.north.isEmpty(this.collidesWith) &&
+            cn.south.isEmpty(this.collidesWith) &&
+            cn.east.isEmpty(this.collidesWith) &&
+            cn.west.isEmpty(this.collidesWith) &&
+            cn.north.east.isEmpty(this.collidesWith) &&
+            cn.north.west.isEmpty(this.collidesWith) &&
+            cn.south.east.isEmpty(this.collidesWith) &&
+            cn.south.west.isEmpty(this.collidesWith));
+  };
+
 };
 
 Ship = function () {
@@ -447,6 +468,17 @@ GridNode = function () {
       callback.call(sprite, ref);
     }
   };
+
+  this.isEmpty = function (collidables) {
+    var empty = true;
+    var ref = this;
+    while (ref.nextSprite) {
+      ref = ref.nextSprite;
+      empty = !ref.visible || collidables.indexOf(ref.name) == -1
+      if (!empty) break;
+    }
+    return empty;
+  };
 };
 
 // borrowed from typeface-0.14.js
@@ -624,6 +656,10 @@ $(function () {
       var roid = new Asteroid();
       roid.x = Math.random() * canvasWidth;
       roid.y = Math.random() * canvasHeight;
+      while (!roid.isClear()) {
+        roid.x = Math.random() * canvasWidth;
+        roid.y = Math.random() * canvasHeight;
+      }
       roid.vel.x = Math.random() * 4 - 2;
       roid.vel.y = Math.random() * 4 - 2;
       if (Math.random() > 0.5) {
@@ -634,7 +670,7 @@ $(function () {
     }
   }
 
-  var totalAsteroids = 1;
+  var totalAsteroids = 5;
 
   var FSM = {
     boot: function () {
@@ -642,7 +678,7 @@ $(function () {
       this.state = 'waiting';
     },
     waiting: function () {
-      Text.renderText('Press Space to Start', 36, canvasWidth/2 - 280, canvasHeight/2);
+      Text.renderText('Press Space to Start', 36, canvasWidth/2 - 270, canvasHeight/2);
       if (KEY_STATUS.space) {
         KEY_STATUS.space = false; // hack so we don't shoot right away
         this.state = 'start';
@@ -656,28 +692,16 @@ $(function () {
           sprites[i].visible = false;
         }
       }
+
+      totalAsteroids = 3;
       spawnAsteroids(totalAsteroids);
       ship.lives = 2;
       this.state = 'spawn_ship';
     },
     spawn_ship: function () {
-      var gridx = Math.floor(canvasWidth / (2 * GRID_SIZE)) + 1;
-      var gridy = Math.floor(canvasHeight / (2 * GRID_SIZE)) + 1;
-      gridx = (gridx >= grid.length) ? 0 : gridx;
-      gridy = (gridy >= grid[0].length) ? 0 : gridy;
-      // only spawn when center is clear
-      var cn = grid[gridx][gridy];
-      if (!(cn.nextSprite ||
-            cn.north.nextSprite ||
-            cn.south.nextSprite ||
-            cn.east.nextSprite ||
-            cn.west.nextSprite ||
-            cn.north.east.nextSprite ||
-            cn.north.west.nextSprite ||
-            cn.south.east.nextSprite ||
-            cn.south.west.nextSprite)) {
-        ship.x = canvasWidth / 2;
-        ship.y = canvasHeight / 2;
+      ship.x = canvasWidth / 2;
+      ship.y = canvasHeight / 2;
+      if (ship.isClear()) {
         ship.rot = 0;
         ship.vel.x = 0;
         ship.vel.y = 0;
@@ -702,11 +726,8 @@ $(function () {
       // wait a second before spawning more asteroids
       if (new Date() - this.timer > 1000) {
         this.timer = null;
-        ship.visible = false;
-        ship.currentNode.leave(this);
-        ship.currentNode = null;
         spawnAsteroids(++totalAsteroids);
-        this.state = 'spawn_ship';
+        this.state = 'run';
       }
     },
     player_died: function () {
