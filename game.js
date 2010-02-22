@@ -657,6 +657,8 @@ $(function () {
   var extraDude = new Ship();
   extraDude.scale = 0.6;
   extraDude.visible = true;
+  extraDude.preMove = null;
+  extraDude.children = [];
 
   function spawnAsteroids(count) {
     for (var i = 0; i < count; i++) {
