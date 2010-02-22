@@ -306,12 +306,6 @@ Ship = function () {
     }
   };
 
-  this.collision = function (other) {
-    if (other.name == "asteroid") {
-      this.die();
-    }
-  };
-
 };
 Ship.prototype = new Sprite();
 
@@ -640,7 +634,7 @@ $(function () {
     }
   }
 
-  var totalAsteroids = 3;
+  var totalAsteroids = 1;
 
   var FSM = {
     boot: function () {
@@ -658,14 +652,17 @@ $(function () {
       for (var i = 0; i < sprites.length; i++) {
         if (sprites[i].name == 'asteroid') {
           sprites[i].die();
+        } else if (sprites[i].name == 'bullet') {
+          sprites[i].visible = false;
         }
       }
       spawnAsteroids(totalAsteroids);
+      ship.lives = 2;
       this.state = 'spawn_ship';
     },
     spawn_ship: function () {
-      var gridx = Math.floor(ship.x / GRID_SIZE) + 1;
-      var gridy = Math.floor(ship.y / GRID_SIZE) + 1;
+      var gridx = Math.floor(canvasWidth / (2 * GRID_SIZE)) + 1;
+      var gridy = Math.floor(canvasHeight / (2 * GRID_SIZE)) + 1;
       gridx = (gridx >= grid.length) ? 0 : gridx;
       gridy = (gridy >= grid[0].length) ? 0 : gridy;
       // only spawn when center is clear
@@ -679,17 +676,63 @@ $(function () {
             cn.north.west.nextSprite ||
             cn.south.east.nextSprite ||
             cn.south.west.nextSprite)) {
+        ship.x = canvasWidth / 2;
+        ship.y = canvasHeight / 2;
+        ship.rot = 0;
+        ship.vel.x = 0;
+        ship.vel.y = 0;
         ship.visible = true;
         this.state = 'run';
       }
     },
     run: function () {
+      for (var i = 0; i < sprites.length; i++) {
+        if (sprites[i].name == 'asteroid') {
+          break;
+        }
+      }
+      if (i == sprites.length) {
+        this.state = 'new_level';
+      }
     },
     new_level: function () {
+      if (this.timer == null) {
+        this.timer = new Date();
+      }
+      // wait a second before spawning more asteroids
+      if (new Date() - this.timer > 1000) {
+        this.timer = null;
+        ship.visible = false;
+        ship.currentNode.leave(this);
+        ship.currentNode = null;
+        spawnAsteroids(++totalAsteroids);
+        this.state = 'spawn_ship';
+      }
     },
     player_died: function () {
+      if (ship.lives < 0) {
+        this.state = 'end_game';
+      } else {
+        if (this.timer == null) {
+          this.timer = new Date();
+        }
+        // wait a second before spawning
+        if (new Date() - this.timer > 1000) {
+          this.timer = null;
+          this.state = 'spawn_ship';
+        }
+      }
     },
     end_game: function () {
+      Text.renderText('GAME OVER', 50, canvasWidth/2 - 160, canvasHeight/2 + 10);
+      if (this.timer == null) {
+        this.timer = new Date();
+      }
+      // wait 5 seconds then go back to waiting state
+      if (new Date() - this.timer > 5000) {
+        this.timer = null;
+        this.state = 'waiting';
+      }
     },
 
     execute: function () {
@@ -698,6 +741,15 @@ $(function () {
     state: 'boot'
   };
 
+  ship.collision = function (other) {
+    if (other.name == "asteroid") {
+      FSM.state = 'player_died';
+      this.visible = false;
+      this.currentNode.leave(this);
+      this.currentNode = null;
+      this.lives--;
+    }
+  };
 
   var i, j = 0;
   var showFramerate = false;
