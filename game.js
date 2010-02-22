@@ -5,17 +5,20 @@ KEY_CODES = {
   39: 'right',
   70: 'f',
   71: 'g',
-  72: 'h'
+  72: 'h',
+  80: 'p'
 }
 
-KEY_STATUS = {};
+KEY_STATUS = { keyDown:false };
 for (code in KEY_CODES) {
   KEY_STATUS[KEY_CODES[code]] = false;
 }
 
 $(window).keydown(function (e) {
+  KEY_STATUS.keyDown = true;
   KEY_STATUS[KEY_CODES[e.keyCode]] = true;
 }).keyup(function (e) {
+  KEY_STATUS.keyDown = false;
   KEY_STATUS[KEY_CODES[e.keyCode]] = false;
 });
 
@@ -247,8 +250,6 @@ Ship = function () {
                              [-3,  6,
                                0, 11,
                                3,  6]);
-
-  this.visible = true;
 
   this.bulletCounter = 0;
 
@@ -624,23 +625,63 @@ $(function () {
     sprites.push(bull);
   }
 
-  for (var i = 0; i < 5; i++) {
-    var roid = new Asteroid();
-    roid.x = Math.random() * canvasWidth;
-    roid.y = Math.random() * canvasHeight;
-    roid.vel.x = Math.random() * 4 - 2;
-    roid.vel.y = Math.random() * 4 - 2;
-    if (Math.random() > 0.5) {
-      roid.points.reverse();
+  function spawnAsteroids(count) {
+    for (var i = 0; i < count; i++) {
+      var roid = new Asteroid();
+      roid.x = Math.random() * canvasWidth;
+      roid.y = Math.random() * canvasHeight;
+      roid.vel.x = Math.random() * 4 - 2;
+      roid.vel.y = Math.random() * 4 - 2;
+      if (Math.random() > 0.5) {
+        roid.points.reverse();
+      }
+      roid.vel.rot = Math.random() * 2 - 1;
+      sprites.push(roid);
     }
-    roid.vel.rot = Math.random() * 2 - 1;
-    sprites.push(roid);
   }
 
+  var totalAsteroids = 3;
+
   var FSM = {
+    boot: function () {
+      spawnAsteroids(totalAsteroids);
+      this.state = 'waiting';
+    },
     waiting: function () {
+      Text.renderText('Press Space to Start', 36, canvasWidth/2 - 280, canvasHeight/2);
+      if (KEY_STATUS.space) {
+        KEY_STATUS.space = false; // hack so we don't shoot right away
+        this.state = 'start';
+      }
     },
     start: function () {
+      for (var i = 0; i < sprites.length; i++) {
+        if (sprites[i].name == 'asteroid') {
+          sprites[i].die();
+        }
+      }
+      spawnAsteroids(totalAsteroids);
+      this.state = 'spawn_ship';
+    },
+    spawn_ship: function () {
+      var gridx = Math.floor(ship.x / GRID_SIZE) + 1;
+      var gridy = Math.floor(ship.y / GRID_SIZE) + 1;
+      gridx = (gridx >= grid.length) ? 0 : gridx;
+      gridy = (gridy >= grid[0].length) ? 0 : gridy;
+      // only spawn when center is clear
+      var cn = grid[gridx][gridy];
+      if (!(cn.nextSprite ||
+            cn.north.nextSprite ||
+            cn.south.nextSprite ||
+            cn.east.nextSprite ||
+            cn.west.nextSprite ||
+            cn.north.east.nextSprite ||
+            cn.north.west.nextSprite ||
+            cn.south.east.nextSprite ||
+            cn.south.west.nextSprite)) {
+        ship.visible = true;
+        this.state = 'run';
+      }
     },
     run: function () {
     },
@@ -650,7 +691,11 @@ $(function () {
     },
     end_game: function () {
     },
-    current: 'waiting'
+
+    execute: function () {
+      this[this.state]();
+    },
+    state: 'boot'
   };
 
 
@@ -665,6 +710,8 @@ $(function () {
 
   var mainLoop = function () {
     context.clearRect(0, 0, canvasWidth, canvasHeight);
+
+    FSM.execute();
 
     if (KEY_STATUS.g) {
       context.beginPath();
@@ -707,16 +754,15 @@ $(function () {
   $(window).keydown(function (e) {
     if (KEY_CODES[e.keyCode] == 'f') {
       showFramerate = !showFramerate;
-    }
-  });
-
-  canvas.click(function () {
-    if (mainLoopId) {
-      clearInterval(mainLoopId);
-      mainLoopId = null;
-    } else {
-      lastFrame = new Date();
-      mainLoopId = setInterval(mainLoop, 10);
+    } else if (KEY_CODES[e.keyCode] == 'p') {
+      if (mainLoopId) {
+        clearInterval(mainLoopId);
+        mainLoopId = null;
+        Text.renderText('PAUSED', 72, canvasWidth/2 - 160, canvasHeight/2 + 20);
+      } else {
+        lastFrame = new Date();
+        mainLoopId = setInterval(mainLoop, 10);
+      }
     }
   });
 });
