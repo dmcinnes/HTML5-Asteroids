@@ -6,6 +6,7 @@ KEY_CODES = {
   70: 'f',
   71: 'g',
   72: 'h',
+  77: 'm',
   80: 'p'
 }
 
@@ -301,9 +302,10 @@ Ship = function () {
     }
     if (KEY_STATUS.space) {
       if (this.bulletCounter <= 0) {
-        this.bulletCounter = 6;
+        this.bulletCounter = 10;
         for (var i = 0; i < this.bullets.length; i++) {
           if (!this.bullets[i].visible) {
+            SFX.laser();
             var bullet = this.bullets[i];
             var rad = ((this.rot-90) * Math.PI)/180;
             var vectorx = Math.cos(rad);
@@ -552,6 +554,34 @@ Text = {
   face: null
 };
 
+SFX = {
+  laser:     new Audio('39459__THE_bizniss__laser.wav'),
+  explosion: new Audio('51467__smcameron__missile_explosion.wav')
+};
+
+// preload audio
+for (var sfx in SFX) {
+  (function () {
+    var audio = SFX[sfx];
+    audio.muted = true;
+    audio.play();
+
+    SFX[sfx] = function () {
+      if (!this.muted) {
+        if (audio.duration == 0) {
+          // somehow dropped out
+          audio.load();
+          audio.play();
+        } else {
+          audio.muted = false;
+          audio.currentTime = 0;
+        }
+      }
+      return audio;
+    }
+  })();
+}
+
 
 $(function () {
   var canvas = $("#canvas");
@@ -615,6 +645,7 @@ $(function () {
   Asteroid.prototype.collision = function (other) {
     if (other.name == "ship" ||
         other.name == "bullet") {
+      SFX.explosion();
       score += 120 / this.scale;
       this.scale /= 3;
       if (this.scale > 0.5) {
@@ -775,6 +806,7 @@ $(function () {
 
   ship.collision = function (other) {
     if (other.name == "asteroid") {
+      SFX.explosion();
       FSM.state = 'player_died';
       this.visible = false;
       this.currentNode.leave(this);
@@ -785,7 +817,7 @@ $(function () {
 
   var i, j = 0;
   var showFramerate = false;
-  var avgFramerate = 30;
+  var avgFramerate = 0;
 
   var lastFrame = new Date();
   var thisFrame;
@@ -850,17 +882,23 @@ $(function () {
   var mainLoopId = setInterval(mainLoop, 10);
 
   $(window).keydown(function (e) {
-    if (KEY_CODES[e.keyCode] == 'f') {
-      showFramerate = !showFramerate;
-    } else if (KEY_CODES[e.keyCode] == 'p') {
-      if (mainLoopId) {
-        clearInterval(mainLoopId);
-        mainLoopId = null;
-        Text.renderText('PAUSED', 72, canvasWidth/2 - 160, 120);
-      } else {
-        lastFrame = new Date();
-        mainLoopId = setInterval(mainLoop, 10);
-      }
+    switch (KEY_CODES[e.keyCode]) {
+      case 'f': // show framerate
+        showFramerate = !showFramerate;
+        break;
+      case 'p': // pause
+        if (mainLoopId) {
+          clearInterval(mainLoopId);
+          mainLoopId = null;
+          Text.renderText('PAUSED', 72, canvasWidth/2 - 160, 120);
+        } else {
+          lastFrame = new Date();
+          mainLoopId = setInterval(mainLoop, 10);
+        }
+        break;
+      case 'm': // mute
+        SFX.muted = !SFX.muted;
+        break;
     }
   });
 });
