@@ -64,10 +64,9 @@ Matrix = function (rows, columns) {
 };
 
 Sprite = function () {
-  this.init = function (name, points, diameter) {
+  this.init = function (name, points) {
     this.name     = name;
     this.points   = points;
-    this.diameter = diameter || 1;
 
     this.vel = {
       x:   0,
@@ -208,8 +207,8 @@ Sprite = function () {
       var xi = i*2;
       var yi = xi + 1;
       if (this.context.isPointInPath(trans[xi], trans[yi])) {
-        this.collision(other);
         other.collision(this);
+        this.collision(other);
         return;
       }
     }
@@ -265,7 +264,7 @@ Ship = function () {
   this.init("ship",
             [-5,   4,
               0, -12,
-              5,   4], 12);
+              5,   4]);
 
   this.children.exhaust = new Sprite();
   this.children.exhaust.init("exhaust",
@@ -275,7 +274,7 @@ Ship = function () {
 
   this.bulletCounter = 0;
 
-  this.collidesWith = ["asteroid"];
+  this.collidesWith = ["asteroid", "bigalien"];
 
   this.preMove = function (delta) {
     if (KEY_STATUS.left) {
@@ -332,6 +331,44 @@ Ship = function () {
 };
 Ship.prototype = new Sprite();
 
+BigAlien = function () {
+  this.init("bigalien",
+            [-20,   0,
+             -12,  -4,
+              12,  -4,
+              20,   0,
+              12,   4,
+             -12,   4,
+             -20,   0,
+              20,   0]);
+
+//  this.children.top = new Sprite();
+//  this.children.top.init("bigalien_top",
+//                         [-10, -4,
+//                           -8, -6,
+//                            8, -6,
+//                           10, -4]);
+//  this.children.top.visible = true;
+
+//  this.children.bottom = new Sprite();
+//  this.children.bottom.init("bigalien_top",
+//                            [ 10, 4,
+//                               8, 6,
+//                              -8, 6,
+//                             -10, 4]);
+//  this.children.bottom.visible = true;
+
+  this.collidesWith = ["asteroid", "ship", "bullet"];
+
+  this.preMove = function (delta) {
+    this.vel.x = delta;
+    if (Math.random() < 0.01) {
+      this.vel.y = -this.vel.y;
+    }
+  };
+};
+BigAlien.prototype = new Sprite();
+
 Bullet = function () {
   this.init("bullet");
   this.time = 0;
@@ -363,12 +400,10 @@ Bullet = function () {
     }
   };
   this.collision = function (other) {
-    if (other.name == "asteroid") {
-      this.time = 0;
-      this.visible = false;
-      this.currentNode.leave(this);
-      this.currentNode = null;
-    }
+    this.time = 0;
+    this.visible = false;
+    this.currentNode.leave(this);
+    this.currentNode = null;
   };
   this.translatedPoints = function () {
     return [this.x, this.y];
@@ -388,12 +423,12 @@ Asteroid = function () {
                5,  -6,
                2, -10,
               -4, -10,
-              -4,  -5], 20);
+              -4,  -5]);
 
   this.visible = true;
   this.scale = 6;
 
-  this.collidesWith = ["ship", "bullet"];
+  this.collidesWith = ["ship", "bullet", "bigalien"];
 
 };
 Asteroid.prototype = new Sprite();
@@ -641,34 +676,42 @@ $(function () {
   Ship.prototype.postMove     = wrapPostMove;
   Bullet.prototype.postMove   = wrapPostMove;
   Asteroid.prototype.postMove = wrapPostMove;
+  BigAlien.prototype.postMove = wrapPostMove;
 
   Asteroid.prototype.collision = function (other) {
-    if (other.name == "ship" ||
-        other.name == "bullet") {
-      SFX.explosion();
-      score += 120 / this.scale;
-      this.scale /= 3;
-      if (this.scale > 0.5) {
-        // break into fragments
-        for (var i = 0; i < 3; i++) {
-          var roid = $.extend(true, {}, this);
-          roid.vel.x = Math.random() * 6 - 3;
-          roid.vel.y = Math.random() * 6 - 3;
-          if (Math.random() > 0.5) {
-            roid.points.reverse();
-          }
-          roid.vel.rot = Math.random() * 2 - 1;
-          roid.move(roid.scale * 3); // give them a little push
-          sprites.push(roid);
+    SFX.explosion();
+    score += 120 / this.scale;
+    this.scale /= 3;
+    if (this.scale > 0.5) {
+      // break into fragments
+      for (var i = 0; i < 3; i++) {
+        var roid = $.extend(true, {}, this);
+        roid.vel.x = Math.random() * 6 - 3;
+        roid.vel.y = Math.random() * 6 - 3;
+        if (Math.random() > 0.5) {
+          roid.points.reverse();
         }
+        roid.vel.rot = Math.random() * 2 - 1;
+        roid.move(roid.scale * 3); // give them a little push
+        sprites.push(roid);
       }
-      var splosion = new Explosion();
-      splosion.x = other.x;
-      splosion.y = other.y;
-      splosion.visible = true;
-      sprites.push(splosion);
-      this.die();
     }
+    var splosion = new Explosion();
+    splosion.x = other.x;
+    splosion.y = other.y;
+    splosion.visible = true;
+    sprites.push(splosion);
+    this.die();
+  };
+
+  BigAlien.prototype.collision = function (other) {
+    SFX.explosion();
+    var splosion = new Explosion();
+    splosion.x = other.x;
+    splosion.y = other.y;
+    splosion.visible = true;
+    sprites.push(splosion);
+    this.die();
   };
 
   var ship = new Ship();
@@ -684,6 +727,8 @@ $(function () {
     ship.bullets.push(bull);
     sprites.push(bull);
   }
+
+  var bigAlien = null;
 
   var extraDude = new Ship();
   extraDude.scale = 0.6;
@@ -711,6 +756,8 @@ $(function () {
   }
 
   var totalAsteroids = 5;
+
+  var bigAlienCountdown = 200;
 
   var FSM = {
     boot: function () {
@@ -757,6 +804,16 @@ $(function () {
       }
       if (i == sprites.length) {
         this.state = 'new_level';
+      }
+
+      if (!bigAlien && --bigAlienCountdown < 0) {
+        bigAlien = new BigAlien();
+        bigAlien.x = -20;
+        bigAlien.y = canvasHeight * Math.random();
+        bigAlien.vel.x = 1.5;
+        bigAlien.vel.y = 1.0;
+        bigAlien.visible = true;
+        sprites.push(bigAlien);
       }
     },
     new_level: function () {
@@ -805,14 +862,12 @@ $(function () {
   };
 
   ship.collision = function (other) {
-    if (other.name == "asteroid") {
-      SFX.explosion();
-      FSM.state = 'player_died';
-      this.visible = false;
-      this.currentNode.leave(this);
-      this.currentNode = null;
-      this.lives--;
-    }
+    SFX.explosion();
+    FSM.state = 'player_died';
+    this.visible = false;
+    this.currentNode.leave(this);
+    this.currentNode = null;
+    this.lives--;
   };
 
   var i, j = 0;
@@ -853,6 +908,7 @@ $(function () {
       sprites[i].run(delta);
 
       if (sprites[i].reap) {
+        sprites[i].reap = false;
         sprites.splice(i, 1);
         i--;
       }
