@@ -274,7 +274,7 @@ Ship = function () {
 
   this.bulletCounter = 0;
 
-  this.collidesWith = ["asteroid", "bigalien"];
+  this.collidesWith = ["asteroid", "bigalien", "alienbullet"];
 
   this.preMove = function (delta) {
     if (KEY_STATUS.left) {
@@ -344,27 +344,66 @@ BigAlien = function () {
 
 //  this.children.top = new Sprite();
 //  this.children.top.init("bigalien_top",
-//                         [-10, -4,
-//                           -8, -6,
-//                            8, -6,
-//                           10, -4]);
+//                         [-8, -4,
+//                          -6, -6,
+//                           6, -6,
+//                           8, -4]);
 //  this.children.top.visible = true;
 
 //  this.children.bottom = new Sprite();
 //  this.children.bottom.init("bigalien_top",
-//                            [ 10, 4,
-//                               8, 6,
-//                              -8, 6,
-//                             -10, 4]);
+//                            [ 8, 4,
+//                              6, 6,
+//                             -6, 6,
+//                             -8, 4]);
 //  this.children.bottom.visible = true;
 
   this.collidesWith = ["asteroid", "ship", "bullet"];
 
+  this.bulletCounter = 0;
+
   this.preMove = function (delta) {
-    this.vel.x = delta;
-    if (Math.random() < 0.01) {
+    var cn = this.currentNode;
+    if (cn == null) return;
+
+    var topCount = 0;
+    if (cn.north.nextSprite) topCount++;
+    if (cn.north.east.nextSprite) topCount++;
+    if (cn.north.west.nextSprite) topCount++;
+
+    var bottomCount = 0;
+    if (cn.south.nextSprite) bottomCount++;
+    if (cn.south.east.nextSprite) bottomCount++;
+    if (cn.south.west.nextSprite) bottomCount++;
+
+    if (topCount > bottomCount) {
+      this.vel.y = 1;
+    } else if (topCount < bottomCount) {
+      this.vel.y = -1;
+    } else if (Math.random() < 0.01) {
       this.vel.y = -this.vel.y;
     }
+
+    this.bulletCounter -= delta;
+    if (this.bulletCounter <= 0) {
+      this.bulletCounter = 22;
+      for (var i = 0; i < this.bullets.length; i++) {
+        if (!this.bullets[i].visible) {
+          bullet = this.bullets[i];
+          var rad = 2 * Math.PI * Math.random();
+          var vectorx = Math.cos(rad);
+          var vectory = Math.sin(rad);
+          bullet.x = this.x;
+          bullet.y = this.y;
+          bullet.vel.x = 6 * vectorx;
+          bullet.vel.y = 6 * vectory;
+          bullet.visible = true;
+          SFX.laser();
+          break;
+        }
+      }
+    }
+
   };
 };
 BigAlien.prototype = new Sprite();
@@ -428,7 +467,7 @@ Asteroid = function () {
   this.visible = true;
   this.scale = 6;
 
-  this.collidesWith = ["ship", "bullet", "bigalien"];
+  this.collidesWith = ["ship", "bullet", "bigalien", "alienbullet"];
 
 };
 Asteroid.prototype = new Sprite();
@@ -696,22 +735,26 @@ $(function () {
         sprites.push(roid);
       }
     }
-    var splosion = new Explosion();
-    splosion.x = other.x;
-    splosion.y = other.y;
-    splosion.visible = true;
-    sprites.push(splosion);
+    explosionAt(other.x, other.y);
     this.die();
   };
 
   BigAlien.prototype.collision = function (other) {
     SFX.explosion();
-    var splosion = new Explosion();
-    splosion.x = other.x;
-    splosion.y = other.y;
-    splosion.visible = true;
-    sprites.push(splosion);
-    this.die();
+    explosionAt(other.x, other.y);
+    this.visible = false;
+    this.setup();
+  };
+
+  BigAlien.prototype.setup = function () {
+    if (Math.random() < 0.5) {
+      this.x = -20;
+      this.vel.x = 1.5;
+    } else {
+      this.x = canvasWidth + 20;
+      this.vel.x = -1.5;
+    }
+    this.y = Math.random() * canvasHeight;
   };
 
   var ship = new Ship();
@@ -728,7 +771,18 @@ $(function () {
     sprites.push(bull);
   }
 
-  var bigAlien = null;
+  var bigAlien = new BigAlien();
+  bigAlien.setup();
+  bigAlien.bullets = [];
+  for (var i = 0; i < 3; i++) {
+    var bull = new Bullet();
+    bull.name = "alienbullet";
+    bigAlien.bullets.push(bull);
+    sprites.push(bull);
+  }
+  sprites.push(bigAlien);
+
+  var lastAlienTime = Date.now();
 
   var extraDude = new Ship();
   extraDude.scale = 0.6;
@@ -757,7 +811,13 @@ $(function () {
 
   var totalAsteroids = 5;
 
-  var bigAlienCountdown = 200;
+  function explosionAt(x, y) {
+    var splosion = new Explosion();
+    splosion.x = x;
+    splosion.y = y;
+    splosion.visible = true;
+    sprites.push(splosion);
+  }
 
   var FSM = {
     boot: function () {
@@ -775,7 +835,8 @@ $(function () {
       for (var i = 0; i < sprites.length; i++) {
         if (sprites[i].name == 'asteroid') {
           sprites[i].die();
-        } else if (sprites[i].name == 'bullet') {
+        } else if (sprites[i].name == 'bullet' ||
+                   sprites[i].name == 'bigalien') {
           sprites[i].visible = false;
         }
       }
@@ -805,23 +866,19 @@ $(function () {
       if (i == sprites.length) {
         this.state = 'new_level';
       }
-
-      if (!bigAlien && --bigAlienCountdown < 0) {
-        bigAlien = new BigAlien();
-        bigAlien.x = -20;
-        bigAlien.y = canvasHeight * Math.random();
-        bigAlien.vel.x = 1.5;
-        bigAlien.vel.y = 1.0;
+      if (!bigAlien.visible &&
+          Date.now() - lastAlienTime > 5000 &&
+          bigAlien.isClear()) {
         bigAlien.visible = true;
-        sprites.push(bigAlien);
+        lastAlienTime = Date.now();
       }
     },
     new_level: function () {
       if (this.timer == null) {
-        this.timer = new Date();
+        this.timer = Date.now();
       }
       // wait a second before spawning more asteroids
-      if (new Date() - this.timer > 1000) {
+      if (Date.now() - this.timer > 1000) {
         this.timer = null;
         totalAsteroids++;
         if (totalAsteroids > 12) totalAsteroids = 12;
@@ -834,10 +891,10 @@ $(function () {
         this.state = 'end_game';
       } else {
         if (this.timer == null) {
-          this.timer = new Date();
+          this.timer = Date.now();
         }
         // wait a second before spawning
-        if (new Date() - this.timer > 1000) {
+        if (Date.now() - this.timer > 1000) {
           this.timer = null;
           this.state = 'spawn_ship';
         }
@@ -846,10 +903,10 @@ $(function () {
     end_game: function () {
       Text.renderText('GAME OVER', 50, canvasWidth/2 - 160, canvasHeight/2 + 10);
       if (this.timer == null) {
-        this.timer = new Date();
+        this.timer = Date.now();
       }
       // wait 5 seconds then go back to waiting state
-      if (new Date() - this.timer > 5000) {
+      if (Date.now() - this.timer > 5000) {
         this.timer = null;
         this.state = 'waiting';
       }
@@ -863,6 +920,7 @@ $(function () {
 
   ship.collision = function (other) {
     SFX.explosion();
+    explosionAt(other.x, other.y);
     FSM.state = 'player_died';
     this.visible = false;
     this.currentNode.leave(this);
@@ -874,7 +932,7 @@ $(function () {
   var showFramerate = false;
   var avgFramerate = 0;
 
-  var lastFrame = new Date();
+  var lastFrame = Date.now();
   var thisFrame;
   var elapsed;
   var delta;
@@ -898,7 +956,7 @@ $(function () {
       context.stroke();
     }
 
-    thisFrame = new Date();
+    thisFrame = Date.now();
     elapsed = thisFrame - lastFrame;
     lastFrame = thisFrame;
     delta = elapsed / 30;
@@ -948,7 +1006,7 @@ $(function () {
           mainLoopId = null;
           Text.renderText('PAUSED', 72, canvasWidth/2 - 160, 120);
         } else {
-          lastFrame = new Date();
+          lastFrame = Date.now();
           mainLoopId = setInterval(mainLoop, 10);
         }
         break;
