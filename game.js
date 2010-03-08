@@ -108,41 +108,54 @@ Sprite = function () {
     this.configureTransform();
     this.draw();
 
-    this.checkCollisions();
+    var canidates = this.findCollisionCanidates();
 
-    if (this.currentNode) {
-      if (this.currentNode.dupe.horizontal) {
-        this.x += this.currentNode.dupe.horizontal;
-        this.context.restore();
-        this.context.save();
-        this.configureTransform();
-        this.draw();
+    this.checkCollisionsAgainst(canidates);
+
+    this.context.restore();
+
+    if (this.currentNode && this.currentNode.dupe.horizontal) {
+      this.x += this.currentNode.dupe.horizontal;
+      this.context.save();
+      this.configureTransform();
+      this.draw();
+      this.checkCollisionsAgainst(canidates);
+      this.context.restore();
+      if (this.currentNode) {
         this.x -= this.currentNode.dupe.horizontal;
       }
-      if (this.currentNode.dupe.vertical) {
-        this.y += this.currentNode.dupe.vertical;
-        this.context.restore();
-        this.context.save();
-        this.configureTransform();
-        this.draw();
+    }
+    if (this.currentNode && this.currentNode.dupe.vertical) {
+      this.y += this.currentNode.dupe.vertical;
+      this.context.save();
+      this.configureTransform();
+      this.draw();
+      this.checkCollisionsAgainst(canidates);
+      this.context.restore();
+      if (this.currentNode) {
         this.y -= this.currentNode.dupe.vertical;
       }
-      if (this.currentNode.dupe.vertical && this.currentNode.dupe.horizontal) {
-        this.x += this.currentNode.dupe.horizontal;
-        this.y += this.currentNode.dupe.vertical;
-        this.context.restore();
-        this.context.save();
-        this.configureTransform();
-        this.draw();
+    }
+    if (this.currentNode &&
+        this.currentNode.dupe.vertical &&
+        this.currentNode.dupe.horizontal) {
+      this.x += this.currentNode.dupe.horizontal;
+      this.y += this.currentNode.dupe.vertical;
+      this.context.save();
+      this.configureTransform();
+      this.draw();
+      this.checkCollisionsAgainst(canidates);
+      this.context.restore();
+      if (this.currentNode) {
         this.x -= this.currentNode.dupe.horizontal;
         this.y -= this.currentNode.dupe.vertical;
       }
     }
-    this.context.restore();
   };
 
   this.move = function (delta) {
     if (!this.visible) return;
+    this.transPoints = null; // clear cached points
 
     if ($.isFunction(this.preMove)) {
       this.preMove(delta);
@@ -220,18 +233,30 @@ Sprite = function () {
     }
   };
 
-  this.checkCollisions = function () {
-    if (!this.visible || !this.currentNode) return;
+  this.findCollisionCanidates = function () {
+    if (!this.visible || !this.currentNode) return [];
     var cn = this.currentNode;
-    cn.eachSprite(this, this.checkCollision);
-    cn.north.eachSprite(this, this.checkCollision);
-    cn.south.eachSprite(this, this.checkCollision);
-    cn.east.eachSprite(this, this.checkCollision);
-    cn.west.eachSprite(this, this.checkCollision);
-    cn.north.east.eachSprite(this, this.checkCollision);
-    cn.north.west.eachSprite(this, this.checkCollision);
-    cn.south.east.eachSprite(this, this.checkCollision);
-    cn.south.west.eachSprite(this, this.checkCollision);
+    var canidates = [];
+    if (cn.nextSprite) canidates.push(cn.nextSprite);
+    if (cn.north.nextSprite) canidates.push(cn.north.nextSprite);
+    if (cn.south.nextSprite) canidates.push(cn.south.nextSprite);
+    if (cn.east.nextSprite) canidates.push(cn.east.nextSprite);
+    if (cn.west.nextSprite) canidates.push(cn.west.nextSprite);
+    if (cn.north.east.nextSprite) canidates.push(cn.north.east.nextSprite);
+    if (cn.north.west.nextSprite) canidates.push(cn.north.west.nextSprite);
+    if (cn.south.east.nextSprite) canidates.push(cn.south.east.nextSprite);
+    if (cn.south.west.nextSprite) canidates.push(cn.south.west.nextSprite);
+    return canidates
+  };
+
+  this.checkCollisionsAgainst = function (canidates) {
+    for (var i = 0; i < canidates.length; i++) {
+      var ref = canidates[i];
+      do {
+        this.checkCollision(ref);
+        ref = ref.nextSprite;
+      } while (ref)
+    }
   };
 
   this.checkCollision = function (other) {
@@ -261,6 +286,7 @@ Sprite = function () {
   };
 
   this.translatedPoints = function () {
+    if (this.transPoints) return this.transPoints;
     this.matrix.configure(this.rot, this.scale, this.x, this.y);
     var trans = new Array(this.points.length);
     for (var i = 0; i < this.points.length/2; i++) {
@@ -270,6 +296,7 @@ Sprite = function () {
       trans[xi] = pts[0];
       trans[yi] = pts[1];
     }
+    this.transPoints = trans; // cache translated points
     return trans;
   };
 
