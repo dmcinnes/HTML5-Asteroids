@@ -107,9 +107,38 @@ Sprite = function () {
     this.context.save();
     this.configureTransform();
     this.draw();
-    this.context.restore();
 
     this.checkCollisions();
+
+    if (this.currentNode) {
+      if (this.currentNode.dupe.horizontal) {
+        this.x += this.currentNode.dupe.horizontal;
+        this.context.restore();
+        this.context.save();
+        this.configureTransform();
+        this.draw();
+        this.x -= this.currentNode.dupe.horizontal;
+      }
+      if (this.currentNode.dupe.vertical) {
+        this.y += this.currentNode.dupe.vertical;
+        this.context.restore();
+        this.context.save();
+        this.configureTransform();
+        this.draw();
+        this.y -= this.currentNode.dupe.vertical;
+      }
+      if (this.currentNode.dupe.vertical && this.currentNode.dupe.horizontal) {
+        this.x += this.currentNode.dupe.horizontal;
+        this.y += this.currentNode.dupe.vertical;
+        this.context.restore();
+        this.context.save();
+        this.configureTransform();
+        this.draw();
+        this.x -= this.currentNode.dupe.horizontal;
+        this.y -= this.currentNode.dupe.vertical;
+      }
+    }
+    this.context.restore();
   };
 
   this.move = function (delta) {
@@ -137,9 +166,8 @@ Sprite = function () {
 
   this.updateGrid = function () {
     if (!this.visible) return;
-    // +1 to take into account the border
-    var gridx = Math.floor(this.x / GRID_SIZE) + 1;
-    var gridy = Math.floor(this.y / GRID_SIZE) + 1;
+    var gridx = Math.floor(this.x / GRID_SIZE);
+    var gridy = Math.floor(this.y / GRID_SIZE);
     gridx = (gridx >= this.grid.length) ? 0 : gridx;
     gridy = (gridy >= this.grid[0].length) ? 0 : gridy;
     var newNode = this.grid[gridx][gridy];
@@ -149,6 +177,14 @@ Sprite = function () {
       }
       newNode.enter(this);
       this.currentNode = newNode;
+    }
+
+    if (KEY_STATUS.g && this.currentNode) {
+      this.context.lineWidth = 3.0;
+      this.context.strokeStyle = 'green';
+      this.context.strokeRect(gridx*GRID_SIZE+2, gridy*GRID_SIZE+2, GRID_SIZE-4, GRID_SIZE-4);
+      this.context.strokeStyle = 'black';
+      this.context.lineWidth = 1.0;
     }
   };
 
@@ -241,8 +277,8 @@ Sprite = function () {
     if (this.collidesWith.length == 0) return true;
     var cn = this.currentNode;
     if (cn == null) {
-      var gridx = Math.floor(this.x / GRID_SIZE) + 1;
-      var gridy = Math.floor(this.y / GRID_SIZE) + 1;
+      var gridx = Math.floor(this.x / GRID_SIZE);
+      var gridy = Math.floor(this.y / GRID_SIZE);
       gridx = (gridx >= this.grid.length) ? 0 : gridx;
       gridy = (gridy >= this.grid[0].length) ? 0 : gridy;
       cn = this.grid[gridx][gridy];
@@ -521,6 +557,11 @@ GridNode = function () {
 
   this.nextSprite = null;
 
+  this.dupe = {
+    horizontal: null,
+    vertical:   null
+  };
+
   this.enter = function (sprite) {
     sprite.nextSprite = this.nextSprite;
     this.nextSprite = sprite;
@@ -669,10 +710,8 @@ $(function () {
   Text.context = context;
   Text.face = vector_battle;
 
-  // + 2 for border
-  // we have a GRID_SIZE width border around the outside
-  var gridWidth = Math.round(canvasWidth / GRID_SIZE) + 2;
-  var gridHeight = Math.round(canvasHeight / GRID_SIZE) + 2;
+  var gridWidth = Math.round(canvasWidth / GRID_SIZE);
+  var gridHeight = Math.round(canvasHeight / GRID_SIZE);
   var grid = new Array(gridWidth);
   for (var i = 0; i < gridWidth; i++) {
     grid[i] = new Array(gridHeight);
@@ -692,6 +731,17 @@ $(function () {
     }
   }
 
+  // set up borders
+  for (var i = 0; i < gridWidth; i++) {
+    grid[i][0].dupe.vertical            =  canvasHeight;
+    grid[i][gridHeight-1].dupe.vertical = -canvasHeight;
+  }
+
+  for (var j = 0; j < gridHeight; j++) {
+    grid[0][j].dupe.horizontal           =  canvasWidth;
+    grid[gridWidth-1][j].dupe.horizontal = -canvasWidth;
+  }
+
   // so all the sprites can use it
   Sprite.prototype.context = context;
   Sprite.prototype.grid    = grid;
@@ -700,15 +750,15 @@ $(function () {
   var sprites = [];
 
   var wrapPostMove = function () {
-    if (this.x - GRID_SIZE > canvasWidth) {
-      this.x = -GRID_SIZE;
-    } else if (this.x + GRID_SIZE < 0) {
-      this.x = canvasWidth + GRID_SIZE;
+    if (this.x > canvasWidth) {
+      this.x = 0;
+    } else if (this.x < 0) {
+      this.x = canvasWidth;
     }
-    if (this.y - GRID_SIZE > canvasHeight) {
-      this.y = -GRID_SIZE;
-    } else if (this.y + GRID_SIZE < 0) {
-      this.y = canvasHeight + GRID_SIZE;
+    if (this.y > canvasHeight) {
+      this.y = 0;
+    } else if (this.y < 0) {
+      this.y = canvasHeight;
     }
   };
 
@@ -866,12 +916,12 @@ $(function () {
       if (i == sprites.length) {
         this.state = 'new_level';
       }
-      if (!bigAlien.visible &&
-          Date.now() - lastAlienTime > 5000 &&
-          bigAlien.isClear()) {
-        bigAlien.visible = true;
-        lastAlienTime = Date.now();
-      }
+//      if (!bigAlien.visible &&
+//          Date.now() - lastAlienTime > 5000 &&
+//          bigAlien.isClear()) {
+//        bigAlien.visible = true;
+//        lastAlienTime = Date.now();
+//      }
     },
     new_level: function () {
       if (this.timer == null) {
