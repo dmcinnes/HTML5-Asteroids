@@ -341,9 +341,9 @@ Ship = function () {
 
   this.preMove = function (delta) {
     if (KEY_STATUS.left) {
-      this.vel.rot = -5;
+      this.vel.rot = -6;
     } else if (KEY_STATUS.right) {
-      this.vel.rot = 5;
+      this.vel.rot = 6;
     } else {
       this.vel.rot = 0;
     }
