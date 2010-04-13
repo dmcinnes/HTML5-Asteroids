@@ -85,6 +85,7 @@ Sprite = function () {
 
   this.visible = false;
   this.reap    = false;
+  this.wraps   = true;
 
   this.collidesWith = [];
 
@@ -114,41 +115,43 @@ Sprite = function () {
 
     this.context.restore();
 
-    if (this.currentNode && this.currentNode.dupe.horizontal) {
-      this.x += this.currentNode.dupe.horizontal;
-      this.context.save();
-      this.configureTransform();
-      this.draw();
-      this.checkCollisionsAgainst(canidates);
-      this.context.restore();
-      if (this.currentNode) {
-        this.x -= this.currentNode.dupe.horizontal;
+    if (this.wraps) {
+      if (this.currentNode && this.currentNode.dupe.horizontal) {
+        this.x += this.currentNode.dupe.horizontal;
+        this.context.save();
+        this.configureTransform();
+        this.draw();
+        this.checkCollisionsAgainst(canidates);
+        this.context.restore();
+        if (this.currentNode) {
+          this.x -= this.currentNode.dupe.horizontal;
+        }
       }
-    }
-    if (this.currentNode && this.currentNode.dupe.vertical) {
-      this.y += this.currentNode.dupe.vertical;
-      this.context.save();
-      this.configureTransform();
-      this.draw();
-      this.checkCollisionsAgainst(canidates);
-      this.context.restore();
-      if (this.currentNode) {
-        this.y -= this.currentNode.dupe.vertical;
+      if (this.currentNode && this.currentNode.dupe.vertical) {
+        this.y += this.currentNode.dupe.vertical;
+        this.context.save();
+        this.configureTransform();
+        this.draw();
+        this.checkCollisionsAgainst(canidates);
+        this.context.restore();
+        if (this.currentNode) {
+          this.y -= this.currentNode.dupe.vertical;
+        }
       }
-    }
-    if (this.currentNode &&
-        this.currentNode.dupe.vertical &&
-        this.currentNode.dupe.horizontal) {
-      this.x += this.currentNode.dupe.horizontal;
-      this.y += this.currentNode.dupe.vertical;
-      this.context.save();
-      this.configureTransform();
-      this.draw();
-      this.checkCollisionsAgainst(canidates);
-      this.context.restore();
-      if (this.currentNode) {
-        this.x -= this.currentNode.dupe.horizontal;
-        this.y -= this.currentNode.dupe.vertical;
+      if (this.currentNode &&
+          this.currentNode.dupe.vertical &&
+          this.currentNode.dupe.horizontal) {
+        this.x += this.currentNode.dupe.horizontal;
+        this.y += this.currentNode.dupe.vertical;
+        this.context.save();
+        this.configureTransform();
+        this.draw();
+        this.checkCollisionsAgainst(canidates);
+        this.context.restore();
+        if (this.currentNode) {
+          this.x -= this.currentNode.dupe.horizontal;
+          this.y -= this.currentNode.dupe.vertical;
+        }
       }
     }
   };
@@ -183,6 +186,8 @@ Sprite = function () {
     var gridy = Math.floor(this.y / GRID_SIZE);
     gridx = (gridx >= this.grid.length) ? 0 : gridx;
     gridy = (gridy >= this.grid[0].length) ? 0 : gridy;
+    gridx = (gridx < 0) ? this.grid.length-1 : gridx;
+    gridy = (gridy < 0) ? this.grid[0].length-1 : gridy;
     var newNode = this.grid[gridx][gridy];
     if (newNode != this.currentNode) {
       if (this.currentNode) {
@@ -216,6 +221,10 @@ Sprite = function () {
 
     this.context.lineWidth = 1.0 / this.scale;
 
+    for (child in this.children) {
+      this.children[child].draw();
+    }
+
     this.context.beginPath();
 
     this.context.moveTo(this.points[0], this.points[1]);
@@ -227,10 +236,6 @@ Sprite = function () {
 
     this.context.closePath();
     this.context.stroke();
-
-    for (child in this.children) {
-      this.children[child].draw();
-    }
   };
 
   this.findCollisionCanidates = function () {
@@ -281,8 +286,10 @@ Sprite = function () {
   this.die = function () {
     this.visible = false;
     this.reap = true;
-    this.currentNode.leave(this);
-    this.currentNode = null;
+    if (this.currentNode) {
+      this.currentNode.leave(this);
+      this.currentNode = null;
+    }
   };
 
   this.translatedPoints = function () {
@@ -405,21 +412,23 @@ BigAlien = function () {
              -20,   0,
               20,   0]);
 
-//  this.children.top = new Sprite();
-//  this.children.top.init("bigalien_top",
-//                         [-8, -4,
-//                          -6, -6,
-//                           6, -6,
-//                           8, -4]);
-//  this.children.top.visible = true;
+  this.wraps = false;
 
-//  this.children.bottom = new Sprite();
-//  this.children.bottom.init("bigalien_top",
-//                            [ 8, 4,
-//                              6, 6,
-//                             -6, 6,
-//                             -8, 4]);
-//  this.children.bottom.visible = true;
+  this.children.top = new Sprite();
+  this.children.top.init("bigalien_top",
+                         [-8, -4,
+                          -6, -6,
+                           6, -6,
+                           8, -4]);
+  this.children.top.visible = true;
+
+  this.children.bottom = new Sprite();
+  this.children.bottom.init("bigalien_top",
+                            [ 8, 4,
+                              6, 6,
+                             -6, 6,
+                             -8, 4]);
+  this.children.bottom.visible = true;
 
   this.collidesWith = ["asteroid", "ship", "bullet"];
 
@@ -474,6 +483,7 @@ BigAlien.prototype = new Sprite();
 Bullet = function () {
   this.init("bullet");
   this.time = 0;
+  this.wraps = false;
   // asteroid can look for bullets so doesn't have
   // to be other way around
   //this.collidesWith = ["asteroid"];
@@ -537,6 +547,8 @@ Asteroid.prototype = new Sprite();
 
 Explosion = function () {
   this.init("explosion");
+
+  this.wraps = false;
 
   this.lines = [];
   for (var i = 0; i < 5; i++) {
@@ -859,7 +871,7 @@ $(function () {
   }
   sprites.push(bigAlien);
 
-  var lastAlienTime = Date.now();
+  var nextBigAlienTime;
 
   var extraDude = new Ship();
   extraDude.scale = 0.6;
@@ -919,8 +931,11 @@ $(function () {
       }
 
       ship.lives = 2;
-      totalAsteroids = 3;
+      totalAsteroids = 2;
       spawnAsteroids(totalAsteroids);
+
+      nextBigAlienTime = Date.now() + 30000 + (30000 * Math.random());
+
       this.state = 'spawn_ship';
     },
     spawn_ship: function () {
@@ -943,12 +958,11 @@ $(function () {
       if (i == sprites.length) {
         this.state = 'new_level';
       }
-//      if (!bigAlien.visible &&
-//          Date.now() - lastAlienTime > 5000 &&
-//          bigAlien.isClear()) {
-//        bigAlien.visible = true;
-//        lastAlienTime = Date.now();
-//      }
+      if (!bigAlien.visible &&
+          Date.now() > nextBigAlienTime) {
+        bigAlien.visible = true;
+        nextBigAlienTime = Date.now() + (30000 * Math.random());
+      }
     },
     new_level: function () {
       if (this.timer == null) {
