@@ -420,7 +420,7 @@ Ship = function () {
     this.visible = false;
     this.currentNode.leave(this);
     this.currentNode = null;
-    this.lives--;
+    Game.lives--;
   };
 
 };
@@ -818,6 +818,7 @@ for (var sfx in SFX) {
 Game = {
   score: 0,
   totalAsteroids: 5,
+  lives: 0,
 
   canvasWidth: 800,
   canvasHeight: 600,
@@ -880,7 +881,7 @@ Game = {
       }
 
       Game.score = 0;
-      Game.ship.lives = 2;
+      Game.lives = 2;
       Game.totalAsteroids = 2;
       Game.spawnAsteroids();
 
@@ -928,7 +929,7 @@ Game = {
       }
     },
     player_died: function () {
-      if (Game.ship.lives < 0) {
+      if (Game.lives < 0) {
         this.state = 'end_game';
       } else {
         if (this.timer == null) {
@@ -1087,7 +1088,7 @@ $(function () {
     Text.renderText(score_text, 18, Game.canvasWidth - 14 * score_text.length, 20);
 
     // extra dudes
-    for (i = 0; i < ship.lives; i++) {
+    for (i = 0; i < Game.lives; i++) {
       context.save();
       extraDude.x = Game.canvasWidth - (8 * (i + 1));
       extraDude.y = 32;
