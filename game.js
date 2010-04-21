@@ -83,9 +83,10 @@ Sprite = function () {
 
   this.children = {};
 
-  this.visible = false;
-  this.reap    = false;
-  this.bridges = true;
+  this.visible  = false;
+  this.reap     = false;
+  this.bridgesH = true;
+  this.bridgesV = true;
 
   this.collidesWith = [];
 
@@ -115,43 +116,42 @@ Sprite = function () {
 
     this.context.restore();
 
-    if (this.bridges) {
-      if (this.currentNode && this.currentNode.dupe.horizontal) {
-        this.x += this.currentNode.dupe.horizontal;
-        this.context.save();
-        this.configureTransform();
-        this.draw();
-        this.checkCollisionsAgainst(canidates);
-        this.context.restore();
-        if (this.currentNode) {
-          this.x -= this.currentNode.dupe.horizontal;
-        }
+    if (this.bridgesH && this.currentNode && this.currentNode.dupe.horizontal) {
+      this.x += this.currentNode.dupe.horizontal;
+      this.context.save();
+      this.configureTransform();
+      this.draw();
+      this.checkCollisionsAgainst(canidates);
+      this.context.restore();
+      if (this.currentNode) {
+        this.x -= this.currentNode.dupe.horizontal;
       }
-      if (this.currentNode && this.currentNode.dupe.vertical) {
-        this.y += this.currentNode.dupe.vertical;
-        this.context.save();
-        this.configureTransform();
-        this.draw();
-        this.checkCollisionsAgainst(canidates);
-        this.context.restore();
-        if (this.currentNode) {
-          this.y -= this.currentNode.dupe.vertical;
-        }
+    }
+    if (this.bridgesV && this.currentNode && this.currentNode.dupe.vertical) {
+      this.y += this.currentNode.dupe.vertical;
+      this.context.save();
+      this.configureTransform();
+      this.draw();
+      this.checkCollisionsAgainst(canidates);
+      this.context.restore();
+      if (this.currentNode) {
+        this.y -= this.currentNode.dupe.vertical;
       }
-      if (this.currentNode &&
-          this.currentNode.dupe.vertical &&
-          this.currentNode.dupe.horizontal) {
-        this.x += this.currentNode.dupe.horizontal;
-        this.y += this.currentNode.dupe.vertical;
-        this.context.save();
-        this.configureTransform();
-        this.draw();
-        this.checkCollisionsAgainst(canidates);
-        this.context.restore();
-        if (this.currentNode) {
-          this.x -= this.currentNode.dupe.horizontal;
-          this.y -= this.currentNode.dupe.vertical;
-        }
+    }
+    if (this.bridgesH && this.bridgesV &&
+        this.currentNode &&
+        this.currentNode.dupe.vertical &&
+        this.currentNode.dupe.horizontal) {
+      this.x += this.currentNode.dupe.horizontal;
+      this.y += this.currentNode.dupe.vertical;
+      this.context.save();
+      this.configureTransform();
+      this.draw();
+      this.checkCollisionsAgainst(canidates);
+      this.context.restore();
+      if (this.currentNode) {
+        this.x -= this.currentNode.dupe.horizontal;
+        this.y -= this.currentNode.dupe.vertical;
       }
     }
   };
@@ -437,8 +437,6 @@ BigAlien = function () {
              -20,   0,
               20,   0]);
 
-  this.bridges = false;
-
   this.children.top = new Sprite();
   this.children.top.init("bigalien_top",
                          [-8, -4,
@@ -456,6 +454,8 @@ BigAlien = function () {
   this.children.bottom.visible = true;
 
   this.collidesWith = ["asteroid", "ship", "bullet"];
+
+  this.bridgesH = false;
 
   this.bullets = [];
   this.bulletCounter = 0;
@@ -475,8 +475,7 @@ BigAlien = function () {
     this.newPosition();
 
     for (var i = 0; i < 3; i++) {
-      var bull = new Bullet();
-      bull.name = "alienbullet";
+      var bull = new AlienBullet();
       this.bullets.push(bull);
       Game.sprites.push(bull);
     }
@@ -533,13 +532,28 @@ BigAlien = function () {
     this.newPosition();
   };
 
+  this.postMove = function () {
+    if (this.y > Game.canvasHeight) {
+      this.y = 0;
+    } else if (this.y < 0) {
+      this.y = Game.canvasHeight;
+    }
+
+    if ((this.vel.x > 0 && this.x > Game.canvasWidth + 20) ||
+        (this.vel.x < 0 && this.x < -20)) {
+      // why did the alien cross the road?
+      this.visible = false;
+      this.newPosition();
+    }
+  }
 };
 BigAlien.prototype = new Sprite();
 
 Bullet = function () {
   this.init("bullet");
   this.time = 0;
-  this.bridges = false;
+  this.bridgesH = false;
+  this.bridgesV = false;
   this.postMove = this.wrapPostMove;
   // asteroid can look for bullets so doesn't have
   // to be other way around
@@ -580,6 +594,23 @@ Bullet = function () {
 
 };
 Bullet.prototype = new Sprite();
+
+AlienBullet = function () {
+  this.init("alienbullet");
+
+  this.draw = function () {
+    if (this.visible) {
+      this.context.save();
+      this.context.lineWidth = 2;
+      this.context.beginPath();
+      this.context.moveTo(this.x, this.y);
+      this.context.lineTo(this.x-this.vel.x, this.y-this.vel.y);
+      this.context.stroke();
+      this.context.restore();
+    }
+  };
+};
+AlienBullet.prototype = new Bullet();
 
 Asteroid = function () {
   this.init("asteroid",
@@ -627,7 +658,8 @@ Asteroid.prototype = new Sprite();
 Explosion = function () {
   this.init("explosion");
 
-  this.bridges = false;
+  this.bridgesH = false;
+  this.bridgesV = false;
 
   this.lines = [];
   for (var i = 0; i < 5; i++) {
