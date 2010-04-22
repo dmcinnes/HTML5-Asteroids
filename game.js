@@ -17,10 +17,16 @@ for (code in KEY_CODES) {
 
 $(window).keydown(function (e) {
   KEY_STATUS.keyDown = true;
-  KEY_STATUS[KEY_CODES[e.keyCode]] = true;
+  if (KEY_CODES[e.keyCode]) {
+    e.preventDefault();
+    KEY_STATUS[KEY_CODES[e.keyCode]] = true;
+  }
 }).keyup(function (e) {
   KEY_STATUS.keyDown = false;
-  KEY_STATUS[KEY_CODES[e.keyCode]] = false;
+  if (KEY_CODES[e.keyCode]) {
+    e.preventDefault();
+    KEY_STATUS[KEY_CODES[e.keyCode]] = false;
+  }
 });
 
 GRID_SIZE = 60;
@@ -155,7 +161,6 @@ Sprite = function () {
       }
     }
   };
-
   this.move = function (delta) {
     if (!this.visible) return;
     this.transPoints = null; // clear cached points
@@ -179,7 +184,6 @@ Sprite = function () {
       this.postMove(delta);
     }
   };
-
   this.updateGrid = function () {
     if (!this.visible) return;
     var gridx = Math.floor(this.x / GRID_SIZE);
@@ -205,7 +209,6 @@ Sprite = function () {
       this.context.lineWidth = 1.0;
     }
   };
-
   this.configureTransform = function () {
     if (!this.visible) return;
 
@@ -215,7 +218,6 @@ Sprite = function () {
     this.context.rotate(rad);
     this.context.scale(this.scale, this.scale);
   };
-
   this.draw = function () {
     if (!this.visible) return;
 
@@ -237,7 +239,6 @@ Sprite = function () {
     this.context.closePath();
     this.context.stroke();
   };
-
   this.findCollisionCanidates = function () {
     if (!this.visible || !this.currentNode) return [];
     var cn = this.currentNode;
@@ -253,7 +254,6 @@ Sprite = function () {
     if (cn.south.west.nextSprite) canidates.push(cn.south.west.nextSprite);
     return canidates
   };
-
   this.checkCollisionsAgainst = function (canidates) {
     for (var i = 0; i < canidates.length; i++) {
       var ref = canidates[i];
@@ -263,7 +263,6 @@ Sprite = function () {
       } while (ref)
     }
   };
-
   this.checkCollision = function (other) {
     if (!other.visible ||
          this == other ||
@@ -279,10 +278,8 @@ Sprite = function () {
       }
     }
   };
-
   this.collision = function () {
   };
-
   this.die = function () {
     this.visible = false;
     this.reap = true;
@@ -291,7 +288,6 @@ Sprite = function () {
       this.currentNode = null;
     }
   };
-
   this.translatedPoints = function () {
     if (this.transPoints) return this.transPoints;
     this.matrix.configure(this.rot, this.scale, this.x, this.y);
@@ -306,7 +302,6 @@ Sprite = function () {
     this.transPoints = trans; // cache translated points
     return trans;
   };
-
   this.isClear = function () {
     if (this.collidesWith.length == 0) return true;
     var cn = this.currentNode;
@@ -327,7 +322,6 @@ Sprite = function () {
             cn.south.east.isEmpty(this.collidesWith) &&
             cn.south.west.isEmpty(this.collidesWith));
   };
-
   this.wrapPostMove = function () {
     if (this.x > Game.canvasWidth) {
       this.x = 0;
@@ -634,7 +628,7 @@ Asteroid = function () {
 
   this.collision = function (other) {
     SFX.explosion();
-    Game.score += 120 / this.scale;
+    if (other.name == "bullet") Game.score += 120 / this.scale;
     this.scale /= 3;
     if (this.scale > 0.5) {
       // break into fragments
@@ -847,6 +841,8 @@ for (var sfx in SFX) {
     }
   })();
 }
+// pre-mute audio
+SFX.muted = true;
 
 Game = {
   score: 0,
@@ -1137,7 +1133,7 @@ $(function () {
     }
   };
 
-  var mainLoopId = setInterval(mainLoop, 10);
+  var mainLoopId = setInterval(mainLoop, 25);
 
   $(window).keydown(function (e) {
     switch (KEY_CODES[e.keyCode]) {
