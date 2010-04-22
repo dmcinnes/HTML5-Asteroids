@@ -43,8 +43,7 @@ Matrix = function (rows, columns) {
     var sin = Math.sin(rad) * scale;
     var cos = Math.cos(rad) * scale;
     this.set(cos, -sin, transx,
-             sin,  cos, transy,
-               0,    0,      1);
+             sin,  cos, transy);
   };
 
   this.set = function () {
@@ -1040,7 +1039,7 @@ $(function () {
   // so all the sprites can use it
   Sprite.prototype.context = context;
   Sprite.prototype.grid    = grid;
-  Sprite.prototype.matrix  = new Matrix(3, 3);
+  Sprite.prototype.matrix  = new Matrix(2, 3);
 
   var ship = new Ship();
 
