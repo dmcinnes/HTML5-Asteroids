@@ -66,6 +66,7 @@ Matrix = function (rows, columns) {
     }
     return vector;
   };
+
 };
 
 Sprite = function () {
@@ -266,7 +267,7 @@ Sprite = function () {
     if (!other.visible ||
          this == other ||
          this.collidesWith.indexOf(other.name) == -1) return;
-    var trans = other.translatedPoints();
+    var trans = other.translatedPoints(this);
     for (var i = 0; i < trans.length/2; i++) {
       var xi = i*2;
       var yi = xi + 1;
@@ -287,9 +288,9 @@ Sprite = function () {
       this.currentNode = null;
     }
   };
-  this.translatedPoints = function () {
-    if (this.transPoints) return this.transPoints;
-    this.matrix.configure(this.rot, this.scale, this.x, this.y);
+  this.translatedPoints = function (other) {
+//    if (this.transPoints) return this.transPoints;
+    this.matrix.configure(this.rot-other.rot, this.scale-other.scale, this.x-other.x, this.y-other.y);
     var trans = new Array(this.points.length);
     for (var i = 0; i < this.points.length/2; i++) {
       var xi = i*2;
@@ -298,7 +299,7 @@ Sprite = function () {
       trans[xi] = pts[0];
       trans[yi] = pts[1];
     }
-    this.transPoints = trans; // cache translated points
+//    this.transPoints = trans; // cache translated points
     return trans;
   };
   this.isClear = function () {
@@ -544,7 +545,7 @@ BigAlien = function () {
 BigAlien.prototype = new Sprite();
 
 Bullet = function () {
-  this.init("bullet");
+  this.init("bullet", [0, 0]);
   this.time = 0;
   this.bridgesH = false;
   this.bridgesV = false;
@@ -582,9 +583,9 @@ Bullet = function () {
     this.currentNode.leave(this);
     this.currentNode = null;
   };
-  this.translatedPoints = function () {
-    return [this.x, this.y];
-  };
+//  this.translatedPoints = function (other) {
+//    return [this.x, this.y];
+//  };
 
 };
 Bullet.prototype = new Sprite();
@@ -685,10 +686,6 @@ Explosion = function () {
     if (this.scale > 8) {
       this.die();
     }
-  };
-
-  this.translatedPoints = function () {
-    return [this.x, this.y];
   };
 };
 Explosion.prototype = new Sprite();
