@@ -67,6 +67,16 @@ Matrix = function (rows, columns) {
     return vector;
   };
 
+  this.reverseTransform = function (x, y) {
+    // first untranslate
+    var rx = x - this.data[0][2];
+    var ry = y - this.data[1][2];
+    // now multiply by transposed matrix
+    rx = rx * this.data[0][0] + ry * this.data[1][0];
+    ry = rx * this.data[0][1] + ry * this.data[1][1];
+    return [rx, ry];
+  };
+
 };
 
 Sprite = function () {
@@ -118,6 +128,7 @@ Sprite = function () {
 
     var canidates = this.findCollisionCanidates();
 
+    this.matrix.configure(this.rot, this.scale, this.x, this.y);
     this.checkCollisionsAgainst(canidates);
 
     this.context.restore();
@@ -267,11 +278,18 @@ Sprite = function () {
     if (!other.visible ||
          this == other ||
          this.collidesWith.indexOf(other.name) == -1) return;
-    var trans = other.translatedPoints(this);
+    var trans = other.transformedPoints();
+    var px, py;
     for (var i = 0; i < trans.length/2; i++) {
-      var xi = i*2;
-      var yi = xi + 1;
-      if (this.context.isPointInPath(trans[xi], trans[yi])) {
+      px = trans[i*2];
+      py = trans[i*2 + 1];
+      // mozilla doesn't take into account transforms with isPointInPath >:-P
+      if ($.browser.mozilla) {
+        var p = this.matrix.reverseTransform(px, py);
+        px = p[0];
+        py = p[1];
+      }
+      if (this.context.isPointInPath(px, py)) {
         other.collision(this);
         this.collision(other);
         return;
@@ -288,10 +306,10 @@ Sprite = function () {
       this.currentNode = null;
     }
   };
-  this.translatedPoints = function (other) {
-//    if (this.transPoints) return this.transPoints;
-    this.matrix.configure(this.rot-other.rot, this.scale-other.scale, this.x-other.x, this.y-other.y);
+  this.transformedPoints = function () {
+    if (this.transPoints) return this.transPoints;
     var trans = new Array(this.points.length);
+    this.matrix.configure(this.rot, this.scale, this.x, this.y);
     for (var i = 0; i < this.points.length/2; i++) {
       var xi = i*2;
       var yi = xi + 1;
@@ -299,7 +317,7 @@ Sprite = function () {
       trans[xi] = pts[0];
       trans[yi] = pts[1];
     }
-//    this.transPoints = trans; // cache translated points
+    this.transPoints = trans; // cache translated points
     return trans;
   };
   this.isClear = function () {
@@ -583,9 +601,9 @@ Bullet = function () {
     this.currentNode.leave(this);
     this.currentNode = null;
   };
-//  this.translatedPoints = function (other) {
-//    return [this.x, this.y];
-//  };
+  this.transformedPoints = function (other) {
+    return [this.x, this.y];
+  };
 
 };
 Bullet.prototype = new Sprite();
