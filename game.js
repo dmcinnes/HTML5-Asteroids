@@ -1,3 +1,6 @@
+// Asteroids.js
+//
+
 KEY_CODES = {
   32: 'space',
   37: 'left',
@@ -66,17 +69,6 @@ Matrix = function (rows, columns) {
     }
     return vector;
   };
-
-  this.reverseTransform = function (x, y) {
-    // first untranslate
-    var rx = x - this.data[0][2];
-    var ry = y - this.data[1][2];
-    // now multiply by transposed matrix
-    rx = rx * this.data[0][0] + ry * this.data[1][0];
-    ry = rx * this.data[0][1] + ry * this.data[1][1];
-    return [rx, ry];
-  };
-
 };
 
 Sprite = function () {
@@ -280,21 +272,36 @@ Sprite = function () {
          this.collidesWith.indexOf(other.name) == -1) return;
     var trans = other.transformedPoints();
     var px, py;
-    for (var i = 0; i < trans.length/2; i++) {
+    var count = trans.length/2;
+    for (var i = 0; i < count; i++) {
       px = trans[i*2];
       py = trans[i*2 + 1];
       // mozilla doesn't take into account transforms with isPointInPath >:-P
-      if ($.browser.mozilla) {
-        var p = this.matrix.reverseTransform(px, py);
-        px = p[0];
-        py = p[1];
-      }
-      if (this.context.isPointInPath(px, py)) {
+      if (($.browser.mozilla) ? this.pointInPolygon(px, py) : this.context.isPointInPath(px, py)) {
         other.collision(this);
         this.collision(other);
         return;
       }
     }
+  };
+  this.pointInPolygon = function (x, y) {
+    var points = this.transformedPoints();
+    var j = 2;
+    var y0, y1;
+    var oddNodes = false;
+    for (var i = 0; i < points.length; i += 2) {
+      y0 = points[i + 1];
+      y1 = points[j + 1];
+      if ((y0 < y && y1 >= y) ||
+          (y1 < y && y0 >= y)) {
+        if (points[i]+(y-y0)/(y1-y0)*(points[j]-points[i]) < x) {
+          oddNodes = !oddNodes;
+        }
+      }
+      j += 2
+      if (j == points.length) j = 0;
+    }
+    return oddNodes;
   };
   this.collision = function () {
   };
@@ -1170,3 +1177,5 @@ $(function () {
     }
   });
 });
+
+// vim: fdl=0
