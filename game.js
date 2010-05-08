@@ -1092,6 +1092,8 @@ $(function () {
   var i, j = 0;
   var showFramerate = false;
   var avgFramerate = 0;
+  var frameCount = 0;
+  var elapsedCounter = 0;
 
   var lastFrame = Date.now();
   var thisFrame;
@@ -1148,9 +1150,15 @@ $(function () {
     }
 
     if (showFramerate) {
-      avgFramerate = Math.round((avgFramerate * 24 + (1000 / elapsed))
-                                / 25);
       Text.renderText(''+avgFramerate, 24, Game.canvasWidth - 38, Game.canvasHeight - 2);
+    }
+
+    frameCount++;
+    elapsedCounter += elapsed;
+    if (elapsedCounter > 1000) {
+      elapsedCounter -= 1000;
+      avgFramerate = frameCount;
+      frameCount = 0;
     }
   };
 
