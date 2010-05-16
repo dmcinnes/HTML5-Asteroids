@@ -3,6 +3,51 @@
 // Copyright (c) 2010 Doug McInnes
 //
 
+var ipad = navigator.userAgent.match(/iPad/i) != null;
+
+if (ipad) {
+  var TOUCH_MAP = {
+    thrust: 'up',
+    left:   'left',
+    right:  'right',
+    fire:   'space',
+  };
+
+  $(function () {
+    function handleTouch(e) {
+      e.preventDefault();
+
+      for (key in KEY_STATUS) {
+        KEY_STATUS[key] = false;
+      }
+
+      for (var i = 0; i < e.touches.length; i++) {
+        var ele = document.elementFromPoint(e.touches[i].pageX, e.touches[i].pageY);
+        KEY_STATUS[TOUCH_MAP[ele.id]] = true;
+      }
+    }
+
+    function handleTouchEnd(e) {
+      var ele = document.elementFromPoint(e.changedTouches[0].pageX, e.changedTouches[0].pageY);
+      KEY_STATUS[TOUCH_MAP[ele.id]] = false;
+//      $('#console').prepend(ele.id + "<br/>");
+//      var out = ""
+//      for (f in e.changedTouches[0]) {
+//        out += " ";
+//        out += f;
+//      }
+//      console.log(ele.id + ' :: ' + e.changedTouches[0].target);
+    }
+
+    $('.button').bind('touchstart touchmove', function (e) {
+      handleTouch(e.originalEvent);
+    }).bind('touchend', function (e) {
+      handleTouchEnd(e.originalEvent);
+    });
+
+  });
+}
+
 KEY_CODES = {
   32: 'space',
   37: 'left',
@@ -1017,6 +1062,8 @@ Game = {
 
 
 $(function () {
+  if (ipad) setTimeout(function () {window.scrollTo(0,1);}, 10);
+
   var canvas = $("#canvas");
   Game.canvasWidth  = canvas.width();
   Game.canvasHeight = canvas.height();
@@ -1093,7 +1140,7 @@ $(function () {
   extraDude.children = [];
 
   var i, j = 0;
-  var showFramerate = false;
+  var showFramerate = true;
   var avgFramerate = 0;
   var frameCount = 0;
   var elapsedCounter = 0;
