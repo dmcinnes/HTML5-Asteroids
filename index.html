@@ -1,25 +1,24 @@
 <html>
   <head>
-    <meta name="viewport" content="width=960; height=600; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;"/>
     <script src="jquery-1.4.1.min.js"></script>
     <script src="vector_battle_regular.typeface.js"></script>
+    <script src="ipad.js"></script>
     <script src="game.js"></script>
     <style>
-      #canvas { border:1px solid black; top:20px; left:20px; }
-      #container { position:relative; top:20px; width:962px; }
-      .button { position:absolute; border:1px solid green; display:block; }
-      .selected { background: green; }
+      #canvas { border:1px solid black; top:0px; left:0px; }
+      #game-container { position:relative; top:0px; left:0px; }
+      .button { position:absolute; border:1px solid black; }
+      #left-controls { position:absolute; left:1px; bottom:0px; display:none; }
+      #right-controls { position:absolute; right:1px; bottom:0px; display:none; }
       #up { width:200px; height:100px; bottom:100px;}
       #left { width:100px; height:100px; bottom:0px;}
       #right { width:100px; height:100px; bottom:0px; left:100px; }
       #space { width:200px; height:200px; bottom:0px; right:0px; }
-      #console { position:absolute; border: 1px solid green; top:0px; right:0px; width: 400px; height: 200px; overflow:auto;}
-      * {-webkit-user-select: none;}
     </style>
   </head>
   <body>
-    <div id="container">
-      <canvas id="canvas" height="600" width="960"></canvas>
+    <div id="game-container">
+      <canvas id="canvas" width="780" height="540"></canvas>
       <div id="left-controls">
         <div id="up" class='button'>THRUST</div>
         <div id="left" class='button'>LEFT</div>
@@ -28,7 +27,6 @@
       <div id="right-controls">
         <div id="space" class='button'>FIRE</div>
       </div>
-      <div id="console"></div>
     </div>
   </body>
 </html>

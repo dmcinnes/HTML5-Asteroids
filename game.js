@@ -3,87 +3,6 @@
 // Copyright (c) 2010 Doug McInnes
 //
 
-var ipad = navigator.userAgent.match(/iPad/i) != null;
-
-if (ipad) {
-  $(function () {
-
-    function handleTouch(e) {
-      var touches = (e.type == 'touchend') ? e.changedTouches : e.touches;
-
-      var ids = "";
-      for (var i = 0; i < touches.length; i++) {
-        var ele = document.elementFromPoint(touches[i].pageX, touches[i].pageY);
-        ids += ele.id + " ";
-        KEY_STATUS[ele.id] = (e.type != 'touchend');
-        if (e.type != 'touchmove') {
-          console.log(e.timeStamp + " :: " + e.type + " :: " + touches[i].target.id + " :: " + touches[i].identifier);
-        }
-      }
-
-      if (e.type != 'touchmove') {
-//        console.log(e.type + " :: " + e.target.id + " :: " + e.timeStamp);
-//        var out = ""; 
-//        for (f in e) {
-//          out += f + " ";
-//        }
-//        console.log(out);
-      }
-
-    }
-
-    var last = null;
-    function handleTouchEnd(e) {
-      var ele = document.elementFromPoint(e.changedTouches[0].pageX, e.changedTouches[0].pageY);
-      KEY_STATUS[ele.id] = false;
-      if (last) {
-//        for (f in last) {
-//          if (e[f].length) {
-//            console.log(f + ":: " + last[f].length + ", " + e[f].length);
-//          }
-//        }
-        var last = "";
-        var current = "";
-        for (var i = 0; i < e.type.length; i++) {
-          last += last.type[i] + " ";
-          current += e.type[i] + " ";
-        }
-        console.log("last type:: " + last);
-        console.log("current type:: " + current);
-      }
-      last = e;
-//      $('#console').prepend(ele.id + "<br/>");
-//      var out = ""
-//      for (f in e.changedTouches[0]) {
-//        out += " ";
-//        out += f;
-//      }
-//      console.log(ele.id + ' :: ' + e.changedTouches[0].target);
-    }
-
-//    document.addEventListener('touchstart', handleTouch, false);
-//    document.addEventListener('touchmove', handleTouch, false);
-//    document.addEventListener('touchend', handleTouch, false);
-    $('#up, #left, #right, #space').bind('touchstart touchmove touchend', function (e) {
-      handleTouch(e.originalEvent);
-      e.preventDefault();
-    }).bind('touchcancel', function (e) {
-      console.log(e.type + ' target: ' + e.target.id);
-      e.preventDefault();
-    });
-    $(document).bind('gesturestart gesturechange gestureend', function (e) {
-//      console.log(e.type + ' target: ' + e.target.id);
-      e.stopImmediatePropagation();
-      e.preventDefault();
-    });
-
-//    $('.button').bind('mouseover mousedown mouseup', function (e) {
-//      console.log(e.type + " :: " + e.target.id);
-//      e.preventDefault();
-//    });
-  });
-}
-
 KEY_CODES = {
   32: 'space',
   37: 'left',
@@ -998,9 +917,10 @@ Game = {
       this.state = 'waiting';
     },
     waiting: function () {
-      Text.renderText('Press Space to Start', 36, Game.canvasWidth/2 - 270, Game.canvasHeight/2);
-      if (KEY_STATUS.space) {
+      Text.renderText(ipad ? 'Touch Sreen to Start' : 'Press Space to Start', 36, Game.canvasWidth/2 - 270, Game.canvasHeight/2);
+      if (KEY_STATUS.space || window.gameStart) {
         KEY_STATUS.space = false; // hack so we don't shoot right away
+        window.gameStart = false;
         this.state = 'start';
       }
     },
@@ -1086,6 +1006,8 @@ Game = {
         this.timer = null;
         this.state = 'waiting';
       }
+
+      window.gameStart = false;
     },
 
     execute: function () {
@@ -1098,8 +1020,6 @@ Game = {
 
 
 $(function () {
-  if (ipad) setTimeout(function () {window.scrollTo(0,1);}, 10);
-
   var canvas = $("#canvas");
   Game.canvasWidth  = canvas.width();
   Game.canvasHeight = canvas.height();
@@ -1176,7 +1096,7 @@ $(function () {
   extraDude.children = [];
 
   var i, j = 0;
-  var showFramerate = true;
+  var showFramerate = false;
   var avgFramerate = 0;
   var frameCount = 0;
   var elapsedCounter = 0;
