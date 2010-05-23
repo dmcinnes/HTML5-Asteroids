@@ -9,21 +9,25 @@
       #container { position:relative; top:20px; width:962px; }
       .button { position:absolute; border:1px solid green; display:block; }
       .selected { background: green; }
-      #thrust { width:200px; height:100px; bottom:100px;}
+      #up { width:200px; height:100px; bottom:100px;}
       #left { width:100px; height:100px; bottom:0px;}
       #right { width:100px; height:100px; bottom:0px; left:100px; }
-      #fire { width:200px; height:200px; bottom:0px; right:0px; }
-<!--      #console { position:absolute; border: 1px solid green; top:0px; right:0px; width: 400px; height: 200px; overflow:auto;}-->
+      #space { width:200px; height:200px; bottom:0px; right:0px; }
+      #console { position:absolute; border: 1px solid green; top:0px; right:0px; width: 400px; height: 200px; overflow:auto;}
       * {-webkit-user-select: none;}
     </style>
   </head>
   <body>
     <div id="container">
       <canvas id="canvas" height="600" width="960"></canvas>
-      <a id="thrust" class='button'>THRUST</a>
-      <a id="left" class='button'>LEFT</a>
-      <a id="right" class='button'>RIGHT</a>
-      <a id="fire" class='button'>FIRE</a>
+      <div id="left-controls">
+        <div id="up" class='button'>THRUST</div>
+        <div id="left" class='button'>LEFT</div>
+        <div id="right" class='button'>RIGHT</div>
+      </div>
+      <div id="right-controls">
+        <div id="space" class='button'>FIRE</div>
+      </div>
       <div id="console"></div>
     </div>
   </body>

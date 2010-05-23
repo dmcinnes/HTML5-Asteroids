@@ -6,30 +6,52 @@
 var ipad = navigator.userAgent.match(/iPad/i) != null;
 
 if (ipad) {
-  var TOUCH_MAP = {
-    thrust: 'up',
-    left:   'left',
-    right:  'right',
-    fire:   'space',
-  };
-
   $(function () {
+
     function handleTouch(e) {
-      e.preventDefault();
+      var touches = (e.type == 'touchend') ? e.changedTouches : e.touches;
 
-      for (key in KEY_STATUS) {
-        KEY_STATUS[key] = false;
+      var ids = "";
+      for (var i = 0; i < touches.length; i++) {
+        var ele = document.elementFromPoint(touches[i].pageX, touches[i].pageY);
+        ids += ele.id + " ";
+        KEY_STATUS[ele.id] = (e.type != 'touchend');
+        if (e.type != 'touchmove') {
+          console.log(e.timeStamp + " :: " + e.type + " :: " + touches[i].target.id + " :: " + touches[i].identifier);
+        }
       }
 
-      for (var i = 0; i < e.touches.length; i++) {
-        var ele = document.elementFromPoint(e.touches[i].pageX, e.touches[i].pageY);
-        KEY_STATUS[TOUCH_MAP[ele.id]] = true;
+      if (e.type != 'touchmove') {
+//        console.log(e.type + " :: " + e.target.id + " :: " + e.timeStamp);
+//        var out = ""; 
+//        for (f in e) {
+//          out += f + " ";
+//        }
+//        console.log(out);
       }
+
     }
 
+    var last = null;
     function handleTouchEnd(e) {
       var ele = document.elementFromPoint(e.changedTouches[0].pageX, e.changedTouches[0].pageY);
-      KEY_STATUS[TOUCH_MAP[ele.id]] = false;
+      KEY_STATUS[ele.id] = false;
+      if (last) {
+//        for (f in last) {
+//          if (e[f].length) {
+//            console.log(f + ":: " + last[f].length + ", " + e[f].length);
+//          }
+//        }
+        var last = "";
+        var current = "";
+        for (var i = 0; i < e.type.length; i++) {
+          last += last.type[i] + " ";
+          current += e.type[i] + " ";
+        }
+        console.log("last type:: " + last);
+        console.log("current type:: " + current);
+      }
+      last = e;
 //      $('#console').prepend(ele.id + "<br/>");
 //      var out = ""
 //      for (f in e.changedTouches[0]) {
@@ -39,12 +61,26 @@ if (ipad) {
 //      console.log(ele.id + ' :: ' + e.changedTouches[0].target);
     }
 
-    $('.button').bind('touchstart touchmove', function (e) {
+//    document.addEventListener('touchstart', handleTouch, false);
+//    document.addEventListener('touchmove', handleTouch, false);
+//    document.addEventListener('touchend', handleTouch, false);
+    $('#up, #left, #right, #space').bind('touchstart touchmove touchend', function (e) {
       handleTouch(e.originalEvent);
-    }).bind('touchend', function (e) {
-      handleTouchEnd(e.originalEvent);
+      e.preventDefault();
+    }).bind('touchcancel', function (e) {
+      console.log(e.type + ' target: ' + e.target.id);
+      e.preventDefault();
+    });
+    $(document).bind('gesturestart gesturechange gestureend', function (e) {
+//      console.log(e.type + ' target: ' + e.target.id);
+      e.stopImmediatePropagation();
+      e.preventDefault();
     });
 
+//    $('.button').bind('mouseover mousedown mouseup', function (e) {
+//      console.log(e.type + " :: " + e.target.id);
+//      e.preventDefault();
+//    });
   });
 }
 
