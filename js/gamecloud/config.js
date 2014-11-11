@@ -3,5 +3,5 @@
  */
 
 var Config = {
-    gamecloudAddress : "http://127.0.0.1:8888/api/1/"
+    gamecloudAddress : "http://54.220.223.184:8888/api/1/"
 };

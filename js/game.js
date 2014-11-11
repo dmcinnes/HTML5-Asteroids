@@ -19,7 +19,7 @@ Game = {
     bigAlien: null,
 
     nextBigAlienTime: null,
-
+    deathFlag : false,
 
     spawnAsteroids: function (count) {
         if (!count) count = this.totalAsteroids;
@@ -52,6 +52,7 @@ Game = {
     FSM: {
         boot: function () {
             Game.spawnAsteroids(5);
+            this.gamecloud = new Gamecloud();
             this.state = 'waiting';
         },
         waiting: function () {
@@ -119,7 +120,17 @@ Game = {
         }
     },
     player_died: function () {
+
+        // Player died
+        if(!this.deathFlag) {
+            this.deathFlag = true;
+            console.log("Player died!, sending the event to gamecloud");
+            var events = new Events();
+            //events.TriggerDeath("ex:player555", "ex:character5557");
+            this.gamecloud.triggersEvent("nokey", events._hashTriggerPlayerDies, "ex:player39482", "ex:char20482");
+        }
         if (Game.lives < 0) {
+            this.deathFlag = false;
             this.state = 'end_game';
         } else {
             if (this.timer == null) {
@@ -128,6 +139,7 @@ Game = {
           // wait a second before spawning
           if (Date.now() - this.timer > 1000) {
               this.timer = null;
+              this.deathFlag = false;
               this.state = 'spawn_ship';
           }
         }
