@@ -84,6 +84,9 @@ Game = {
             }
         },
         start: function () {
+            console.log("Started again!");
+            var events = new Events();
+            this.gamecloud.triggersEvent("nokey", events._hashTriggerStartNewGame, this.getUserId(), this.getUserId() + "charAsteroidsSpaceShip");
             for (var i = 0; i < Game.sprites.length; i++) {
                 if (Game.sprites[i].name == 'asteroid') {
                     Game.sprites[i].die();
@@ -136,6 +139,8 @@ Game = {
             Game.totalAsteroids++;
             if (Game.totalAsteroids > 12) Game.totalAsteroids = 12;
             Game.spawnAsteroids();
+            var events = new Events();
+            this.gamecloud.triggersEvent("nokey", events._hashTriggerNewLevel, this.getUserId(), this.getUserId() + "charAsteroidsSpaceShip");
             this.state = 'run';
         }
     },
@@ -147,7 +152,7 @@ Game = {
             console.log("Player died!, sending the event to gamecloud");
             var events = new Events();
             //events.TriggerDeath("ex:player555", "ex:character5557");
-            this.gamecloud.triggersEvent("nokey", events._hashTriggerPlayerDies, this.getUserId(), this.getUserId() + "char20482");
+            this.gamecloud.triggersEvent("nokey", events._hashTriggerPlayerDies, this.getUserId(), this.getUserId() + "charAsteroidsSpaceShip");
         }
         if (Game.lives < 0) {
             this.deathFlag = false;
@@ -165,6 +170,9 @@ Game = {
         }
     },
     end_game: function () {
+        console.log("end_game, sending game over to gamecloud");
+        var events = new Events();
+        this.gamecloud.triggersEvent("nokey", events._hashTriggerGameOver, this.getUserId(), this.getUserId() + "charAsteroidsSpaceShip");
         Text.renderText('GAME OVER', 50, Game.canvasWidth/2 - 160, Game.canvasHeight/2 + 10);
         if (this.timer == null) {
             this.timer = Date.now();

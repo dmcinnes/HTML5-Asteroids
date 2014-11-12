@@ -5,6 +5,10 @@
 function Events() {
     this._hashTriggerPlayerDies = "z8l5d3n7m71ll3di";
     this._hashCheckPlayerDeaths = "utxlv6pq7c9b2o6r";
+    this._hashTriggerGameOver = "vmk23r7hfqn6ogvi";
+    this._hashCheckPlayerGameOvers = "tiqjipe37r0e8kt9";
+    this._hashTriggerStartNewGame = "kawsppiiy8i1kyb9";
+    this._hashTriggerNewLevel = "kawsppiiy8i1kyb9";
 }
 
 /**
