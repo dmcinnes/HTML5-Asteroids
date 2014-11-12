@@ -50,6 +50,26 @@ Game = {
     },
 
     FSM: {
+
+        userId : "",
+
+        initializeUserId : function() {
+            var userId = $('#gamecloud-username').text();
+            if ((userId === undefined) || (userId === "username")) {
+                userId = "User" + moment().format().toString();
+            }
+            // And add the ex: prefix
+            this.userId = "ex:" + userId;
+        },
+
+        getUserId : function() {
+            if(this.userId === "") {
+                this.initializeUserId();
+            }
+
+            return this.userId;
+        },
+
         boot: function () {
             Game.spawnAsteroids(5);
             this.gamecloud = new Gamecloud();
@@ -127,7 +147,7 @@ Game = {
             console.log("Player died!, sending the event to gamecloud");
             var events = new Events();
             //events.TriggerDeath("ex:player555", "ex:character5557");
-            this.gamecloud.triggersEvent("nokey", events._hashTriggerPlayerDies, "ex:player39482", "ex:char20482");
+            this.gamecloud.triggersEvent("nokey", events._hashTriggerPlayerDies, this.getUserId(), this.getUserId() + "char20482");
         }
         if (Game.lives < 0) {
             this.deathFlag = false;
