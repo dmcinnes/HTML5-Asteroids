@@ -11,6 +11,10 @@ Game = {
     totalAsteroids: 5,
     lives: 0,
 
+    // Gamecloud related flags
+    deathSent : false,
+    gameOverSent : false,
+
     canvasWidth: 800,
     canvasHeight: 600,
 
@@ -149,10 +153,16 @@ Game = {
         // Player died
         if(!this.deathFlag) {
             this.deathFlag = true;
-            console.log("Player died!, sending the event to gamecloud");
+
             var events = new Events();
-            //events.TriggerDeath("ex:player555", "ex:character5557");
-            this.gamecloud.triggersEvent("nokey", events._hashTriggerPlayerDies, this.getUserId(), this.getUserId() + "charAsteroidsSpaceShip");
+            // No death event has been sent
+            if(!this.deathSent) {
+                console.log("Player died!, sending the event to gamecloud");
+                // So send it now
+                this.gamecloud.triggersEvent("nokey", events._hashTriggerPlayerDies, this.getUserId(), this.getUserId() + "charAsteroidsSpaceShip");
+                // And change the flag
+                this.deathSent = true;
+            }
         }
         if (Game.lives < 0) {
             this.deathFlag = false;
@@ -165,14 +175,23 @@ Game = {
           if (Date.now() - this.timer > 1000) {
               this.timer = null;
               this.deathFlag = false;
+              // We go to spawn, so flip of the deathSent
+              this.deathSent = false;
               this.state = 'spawn_ship';
           }
         }
     },
     end_game: function () {
-        console.log("end_game, sending game over to gamecloud");
         var events = new Events();
-        this.gamecloud.triggersEvent("nokey", events._hashTriggerGameOver, this.getUserId(), this.getUserId() + "charAsteroidsSpaceShip");
+        // If no game over has yet been sent
+        if(!this.gameOverSent) {
+            console.log("end_game, sending game over to gamecloud");
+            // Send it
+            this.gamecloud.triggersEvent("nokey", events._hashTriggerGameOver, this.getUserId(), this.getUserId() + "charAsteroidsSpaceShip");
+            // And flag
+            this.gameOverSent = true;
+        }
+
         Text.renderText('GAME OVER', 50, Game.canvasWidth/2 - 160, Game.canvasHeight/2 + 10);
         if (this.timer == null) {
             this.timer = Date.now();
@@ -180,6 +199,8 @@ Game = {
         // wait 5 seconds then go back to waiting state
         if (Date.now() - this.timer > 5000) {
             this.timer = null;
+            // Set the gameover sent flag back to false
+            this.gameOverSent = false;
             this.state = 'waiting';
         }
 

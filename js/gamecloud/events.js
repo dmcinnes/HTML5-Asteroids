@@ -3,12 +3,12 @@
  */
 
 function Events() {
-    this._hashTriggerPlayerDies = "z8l5d3n7m71ll3di";
-    this._hashCheckPlayerDeaths = "utxlv6pq7c9b2o6r";
-    this._hashTriggerGameOver = "vmk23r7hfqn6ogvi";
-    this._hashCheckPlayerGameOvers = "tiqjipe37r0e8kt9";
-    this._hashTriggerStartNewGame = "kawsppiiy8i1kyb9";
-    this._hashTriggerNewLevel = "kawsppiiy8i1kyb9";
+    this._hashTriggerPlayerDies = "qoxyomgo9ntutyb9";
+    this._hashCheckPlayerDeaths = "q5hkxlt3b6vtpgb9";
+    this._hashTriggerGameOver = "1gc0n61e1d53tyb9";
+    this._hashCheckPlayerGameOvers = "t7b6g13prnj6ecdi";
+    this._hashTriggerStartNewGame = "3txcv5phj5ze61or";
+    this._hashTriggerNewLevel = "zscriegujqlx47vi";
 }
 
 /**
