@@ -85,6 +85,9 @@ Game = {
                 KEY_STATUS.space = false; // hack so we don't shoot right away
                 window.gameStart = false;
                 this.state = 'start';
+                // Give test achievements
+                Achievements.addAchievement("newPlayer");
+                Achievements.displayOwnedAchievements();
             }
         },
         start: function () {

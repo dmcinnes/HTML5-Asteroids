@@ -78,6 +78,8 @@ function Logout() {
     $('#gamecloud-login-password').val("");
     // And hide yourself
     $('#gamecloud-logged').hide();
+    // Empty achievements from memory
+    Achievements.zeroAchievements();
 }
 
 /**
@@ -133,6 +135,15 @@ function AuthCallback(data) {
         $('#gamecloud-logged').show();
         // And set username
         $('#gamecloud-username').text($('#gamecloud-login-username').val());
+
+        // Check the player achievements
+        Achievements.retrieveAchievementsFromGamecloud(function(err, result) {
+            if(err) {
+                throw err;
+            } else {
+                console.log("---Checked achievements from Gamecloud---");
+            }
+        });
     } else {
         alert(data);
     }

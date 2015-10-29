@@ -1,98 +1,99 @@
 <html>
-  <head>
-    <script src="js/lib/jquery-1.4.1.min.js"></script>
-    <!-- Latest compiled and minified CSS -->
-    <script src="//code.jquery.com/jquery-1.11.0.min.js"></script>
-    <script src="//code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.0/css/bootstrap.min.css">
+    <head>
+        <script src="js/lib/jquery-1.4.1.min.js"></script>
+        <!-- Latest compiled and minified CSS -->
+        <script src="//code.jquery.com/jquery-1.11.0.min.js"></script>
+        <script src="//code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.0/css/bootstrap.min.css">
 
-    <!-- Optional theme -->
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.0/css/bootstrap-theme.min.css">
+        <!-- Optional theme -->
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.0/css/bootstrap-theme.min.css">
 
-    <!-- Latest compiled and minified JavaScript -->
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.0/js/bootstrap.min.js"></script>
-    <script src="js/lib/moment.min.js"></script>
-    <script src="js/gamecloud/config.js"></script>
-    <script src="js/gamecloud/gamecloud-login.js"></script>
-    <script src="js/gamecloud/events.js"></script>
-    <script src="js/gamecloud/gamecloud.js"></script>
-    <script src="js/lib/vector_battle_regular.typeface.js"></script>
-    <script src="js/ipad.js"></script>
-    <script src="js/matrix.js"></script>
-    <script src="js/sprite.js"></script>
-    <script src="js/ship.js"></script>
-    <script src="js/big-alien.js"></script>
-    <script src="js/bullets.js"></script>
-    <script src="js/asteroid.js"></script>
-    <script src="js/grid-node.js"></script>
-    <script src="js/effects.js"></script>
-    <script src="js/keycodes.js"></script>
-    <script src="js/game.js"></script>
-    <script src="js/main.js"></script>
-    <style>
-      #canvas { border:1px solid black; top:0px; left:0px; }
-      .button { position:absolute; border:1px solid black; }
-      #left-controls { position:absolute; left:1px; bottom:0px; display:none; }
-      #right-controls { position:absolute; right:1px; bottom:0px; display:none; }
-      #up { width:200px; height:100px; bottom:100px;}
-      #left { width:100px; height:100px; bottom:0px;}
-      #right { width:100px; height:100px; bottom:0px; left:100px; }
-      #space { width:200px; height:200px; bottom:0px; right:0px; }
-    </style>
-  </head>
-  <body>
-    <div id="game-container" class="col-md-8">
-      <canvas id="canvas" width="780" height="540"></canvas>
-      <div id="left-controls">
-        <div id="up" class='button'>THRUST</div>
-        <div id="left" class='button'>LEFT</div>
-        <div id="right" class='button'>RIGHT</div>
-      </div>
-      <div id="right-controls">
-        <div id="space" class='button'>FIRE</div>
-      </div>
-    </div>
-
-    <div class="panel panel-default" id="gamecloud-create">
-      <div class="col-md-3">
-        <div class="panel with-nav-tabs panel-default">
-          <div class="panel-heading">
-            <ul class="nav nav-tabs">
-              <li class="active"><a href="#tab1default" data-toggle="tab">Login</a></li>
-              <li><a href="#tab2default" data-toggle="tab">Create Account</a></li>
-            </ul>
+        <!-- Latest compiled and minified JavaScript -->
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.0/js/bootstrap.min.js"></script>
+        <script src="js/lib/moment.min.js"></script>
+        <script src="js/lib/lodash.min.js"></script>
+        <script src="js/gamecloud/config.js"></script>
+        <script src="js/gamecloud/gamecloud-login.js"></script>
+        <script src="js/gamecloud/events.js"></script>
+        <script src="js/gamecloud/gamecloud.js"></script>
+        <script src="js/achievements/achievements.js"></script>
+        <script src="js/lib/vector_battle_regular.typeface.js"></script>
+        <script src="js/ipad.js"></script>
+        <script src="js/matrix.js"></script>
+        <script src="js/sprite.js"></script>
+        <script src="js/ship.js"></script>
+        <script src="js/big-alien.js"></script>
+        <script src="js/bullets.js"></script>
+        <script src="js/asteroid.js"></script>
+        <script src="js/grid-node.js"></script>
+        <script src="js/effects.js"></script>
+        <script src="js/keycodes.js"></script>
+        <script src="js/game.js"></script>
+        <script src="js/main.js"></script>
+        <style>
+            #canvas { border:1px solid black; top:0px; left:0px; }
+            .button { position:absolute; border:1px solid black; }
+            #left-controls { position:absolute; left:1px; bottom:0px; display:none; }
+            #right-controls { position:absolute; right:1px; bottom:0px; display:none; }
+            #up { width:200px; height:100px; bottom:100px;}
+            #left { width:100px; height:100px; bottom:0px;}
+            #right { width:100px; height:100px; bottom:0px; left:100px; }
+            #space { width:200px; height:200px; bottom:0px; right:0px; }
+        </style>
+    </head>
+    <body>
+        <div id="game-container" class="col-md-8">
+          <canvas id="canvas" width="780" height="540"></canvas>
+          <div id="left-controls">
+            <div id="up" class='button'>THRUST</div>
+            <div id="left" class='button'>LEFT</div>
+            <div id="right" class='button'>RIGHT</div>
           </div>
+          <div id="right-controls">
+            <div id="space" class='button'>FIRE</div>
+          </div>
+        </div>
 
-          <div class="panel-body">
-            <div class="tab-content">
-              <div class="tab-pane fade in active" id="tab1default">
-                <div id="gamecloud-login">
-                  <input type="text" id="gamecloud-login-username" placeholder="Enter Username" name="username">
-                  <input type="password" id="gamecloud-login-password" placeholder="Enter Password" name="password">
-                  <button type="button" id="gamecloud-login-button" class="btn btn-default">Log In</button>
-                </div>
-
-                <div id="gamecloud-logged">
-                  <p>Logged in as:</p>
-                  <label id="gamecloud-username">username</label>
-                  <button type="button" id="gamecloud-logout-button" class="btn btn-default">Log Out</button>
-                </div>
+        <div class="panel panel-default" id="gamecloud-create">
+          <div class="col-md-3">
+            <div class="panel with-nav-tabs panel-default">
+              <div class="panel-heading">
+                <ul class="nav nav-tabs">
+                  <li class="active"><a href="#tab1default" data-toggle="tab">Login</a></li>
+                  <li><a href="#tab2default" data-toggle="tab">Create Account</a></li>
+                </ul>
               </div>
-              <div class="tab-pane fade" id="tab2default">
-                <div class="panel-body" id="create">
-                  <input type="text" id="gamecloud-create-username" placeholder="Enter Username">
-                  <input type="password" id="gamecloud-create-password" placeholder="Enter Password">
-                  <input type="password" id="gamecloud-create-password2" placeholder="Confirm Password">
-                  <input type="email" id="gamecloud-create-email" placeholder="Email">
-                  <button type="button" id="gamecloud-create-button" class="btn btn-default">Create Account</button>
+
+              <div class="panel-body">
+                <div class="tab-content">
+                  <div class="tab-pane fade in active" id="tab1default">
+                    <div id="gamecloud-login">
+                      <input type="text" id="gamecloud-login-username" placeholder="Enter Username" name="username">
+                      <input type="password" id="gamecloud-login-password" placeholder="Enter Password" name="password">
+                      <button type="button" id="gamecloud-login-button" class="btn btn-default">Log In</button>
+                    </div>
+
+                    <div id="gamecloud-logged">
+                      <p>Logged in as:</p>
+                      <label id="gamecloud-username">username</label>
+                      <button type="button" id="gamecloud-logout-button" class="btn btn-default">Log Out</button>
+                    </div>
+                  </div>
+                  <div class="tab-pane fade" id="tab2default">
+                    <div class="panel-body" id="create">
+                      <input type="text" id="gamecloud-create-username" placeholder="Enter Username">
+                      <input type="password" id="gamecloud-create-password" placeholder="Enter Password">
+                      <input type="password" id="gamecloud-create-password2" placeholder="Confirm Password">
+                      <input type="email" id="gamecloud-create-email" placeholder="Email">
+                      <button type="button" id="gamecloud-create-button" class="btn btn-default">Create Account</button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-    </div>
 
-
-  </body>
+    </body>
 </html>
