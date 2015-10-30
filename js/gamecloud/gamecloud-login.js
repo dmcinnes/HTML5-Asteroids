@@ -134,10 +134,11 @@ function AuthCallback(data) {
         // And show the logged
         $('#gamecloud-logged').show();
         // And set username
-        $('#gamecloud-username').text($('#gamecloud-login-username').val());
+        var playerId = $('#gamecloud-login-username').val();
+        $('#gamecloud-username').text(playerId);
 
         // Check the player achievements
-        Achievements.retrieveAchievementsFromGamecloud(function(err, result) {
+        Achievements.retrieveAchievementsFromGamecloud(playerId, "characterId", function(err, result) {
             if(err) {
                 throw err;
             } else {

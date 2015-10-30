@@ -123,7 +123,7 @@ Gamecloud.prototype.giveAchievement = function (authkey, hash, playerId, charact
 
 };
 
-Gamecloud.prototype.hasAchievement = function (authkey, hash, playerId, characterId) {
+Gamecloud.prototype.hasAchievement = function (authkey, hash, playerId, characterId, callback) {
 
     json = { "callType" : "ask",
         "authkey" : authkey,
@@ -134,8 +134,11 @@ Gamecloud.prototype.hasAchievement = function (authkey, hash, playerId, characte
     };
 
     $.post(SERVER_ADDRESS, JSON.stringify(json), function(data, textStatus, jqXHR){
-        if (!data ) return false;
-        else return data;
+        if (!data ) {
+            callback("no data", null);
+        } else {
+            callback(null, data);
+        }
 
     });
 
