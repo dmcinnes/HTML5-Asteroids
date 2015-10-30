@@ -62,6 +62,7 @@
                 <ul class="nav nav-tabs">
                   <li class="active"><a href="#tab1default" data-toggle="tab">Login</a></li>
                   <li><a href="#tab2default" data-toggle="tab">Create Account</a></li>
+                  <li><a href="#tab3default" data-toggle="tab">Achievements</a> </li>
                 </ul>
               </div>
 
@@ -80,15 +81,50 @@
                       <button type="button" id="gamecloud-logout-button" class="btn btn-default">Log Out</button>
                     </div>
                   </div>
-                  <div class="tab-pane fade" id="tab2default">
-                    <div class="panel-body" id="create">
-                      <input type="text" id="gamecloud-create-username" placeholder="Enter Username">
-                      <input type="password" id="gamecloud-create-password" placeholder="Enter Password">
-                      <input type="password" id="gamecloud-create-password2" placeholder="Confirm Password">
-                      <input type="email" id="gamecloud-create-email" placeholder="Email">
-                      <button type="button" id="gamecloud-create-button" class="btn btn-default">Create Account</button>
+                    <div class="tab-pane fade" id="tab2default">
+                        <div class="panel-body" id="create">
+                            <input type="text" id="gamecloud-create-username" placeholder="Enter Username">
+                            <input type="password" id="gamecloud-create-password" placeholder="Enter Password">
+                            <input type="password" id="gamecloud-create-password2" placeholder="Confirm Password">
+                            <input type="email" id="gamecloud-create-email" placeholder="Email">
+                            <button type="button" id="gamecloud-create-button" class="btn btn-default">Create Account</button>
+                        </div>
                     </div>
-                  </div>
+
+                    <div class="tab-pane fade" id="tab3default">
+                        <div class="panel-body" id="achievements">
+                            <div>
+                                <label id="owned-achievements-info">
+                                    You have the following achievements in the game:
+                                </label>
+                            </div>
+                            <div>
+                                <label id="achievement-newPlayer" hidden>
+                                    New player
+                                </label>
+                            </div>
+                            <div>
+                                <label id="achievement-destroyFirstAsteroid" hidden>
+                                    Destroy first asteroid
+                                </label>
+                            </div>
+                            <div>
+                                <label id="achievement-score1000Points" hidden>
+                                    Score 1000 points
+                                </label>
+                            </div>
+                            <div>
+                                <label id="achievement-10GamesInARow" hidden>
+                                    10 Games in a row
+                                </label>
+                            </div>
+                            <div>
+                                <label id="achievement-idler" hidden>
+                                    Idler
+                                </label>
+                            </div>
+                        </div>
+                    </div>
                 </div>
               </div>
             </div>

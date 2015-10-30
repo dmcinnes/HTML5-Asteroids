@@ -63,6 +63,8 @@ var Achievements = {
         } else {
             // If not, add it
             console.log("Gave user the following achievement:", achievementName);
+            // Display the given achievement
+            $('#achievement-' + achievementName).show();
             this.ownedAchievements.push(achievementName);
         }
     },
