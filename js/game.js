@@ -86,7 +86,7 @@ Game = {
                 window.gameStart = false;
                 this.state = 'start';
                 // Give test achievements
-                Achievements.addAchievement("newPlayer");
+                Achievements.giveAchievement("newPlayer");
                 Achievements.displayOwnedAchievements();
             }
         },

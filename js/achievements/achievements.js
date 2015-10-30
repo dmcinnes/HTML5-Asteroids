@@ -5,10 +5,17 @@
 
 var Achievements = {
     ownedAchievements : [],
-    allAchievements : ["newPlayer", "destroyFirstAsteroid"],
+    allAchievements : ["newPlayer", "destroyFirstAsteroid", "score1000Points", "10GamesInARow", "idler"],
+    /**
+     * Gets the achievements owned by the player
+     * @returns {Array} An array of owned achievement strings
+     */
     getOwnedAchievements : function() {
         return this.ownedAchievements;
     },
+    /**
+     * Displays the owned achievements on a command line
+     */
     displayOwnedAchievements : function() {
         console.log("The player owns the following achievements:");
         console.log("Amount of achievements:", this.getOwnedAchievements().length);
@@ -16,17 +23,35 @@ var Achievements = {
             console.log("\t" + ownedAchievement);
         });
     },
+    /**
+     * Checks if the given achievement string is actually in the list of achievements of this game
+     * @param {String} achievementName The name of the achievement to check for
+     * @return {String|null} returns the achievement string or a null, whether the achievement exists
+     */
     checkIfExistsAchievement : function(achievementName) {
         return _.findWhere(this.allAchievements, achievementName);
     },
+    /**
+     * Checks if the player actually owns the achievement already or not
+     * @param {String} achievementName Name of the achievement to check
+     * @return {String|null} returns the achievement string or a null, whether the achievement exists
+     */
     checkIfOwnsAchievement : function(achievementName) {
         return _.findWhere(this.ownedAchievements, achievementName);
     },
+    /**
+     * Retrieves the player owned achievements from Gamecloud
+     * @param {Function} callback Regular (err, result) callback function
+     */
     retrieveAchievementsFromGamecloud : function(callback) {
         // Once done, callback
         callback(null, true);
     },
-    addAchievement : function(achievementName) {
+    /**
+     * Gives an achievement to the player, if the player does not already have it
+     * @param {String} achievementName Name of the achievement to give
+     */
+    giveAchievement : function(achievementName) {
         // Check if the achievement even exists
         if(this.checkIfExistsAchievement(achievementName) === false) {
             // Just return, as no such thing exists
@@ -40,6 +65,10 @@ var Achievements = {
             this.ownedAchievements.push(achievementName);
         }
     },
+    /**
+     * Zeroes the owned achievements. This is to enable new players to gain achievements as well
+     * should be used for example when a player logs out of gamecloud.
+     */
     zeroAchievements : function() {
         this.ownedAchievements = [];
     }
