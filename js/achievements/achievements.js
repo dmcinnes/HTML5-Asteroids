@@ -65,6 +65,8 @@ var Achievements = {
             console.log("Gave user the following achievement:", achievementName);
             // Display the given achievement
             $('#achievement-' + achievementName).show();
+            // And show an info box
+            $.notify("Gained achievement: " + achievementName, "success");
             this.ownedAchievements.push(achievementName);
         }
     },
