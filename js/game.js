@@ -60,29 +60,10 @@ Game = {
     },
 
     FSM: {
-
-        userId: "",
-
-        initializeUserId: function () {
-            var userId = $('#gamecloud-username').text();
-            if ((userId === undefined) || (userId === "username")) {
-                userId = "User" + moment().format().toString();
-            }
-            // And add the ex: prefix
-            this.userId = "ex:" + userId;
-        },
-
-        getUserId: function () {
-            if (this.userId === "") {
-                this.initializeUserId();
-            }
-
-            return this.userId;
-        },
-
         boot: function () {
             Game.spawnAsteroids(5);
-            this.gamecloud = new Gamecloud();
+            // Create the gamecloud session
+            Gamecloud.initializeSession();
             this.state = 'waiting';
             // Set the idle timer
             Game.idleTimeStarted = moment();
@@ -105,8 +86,7 @@ Game = {
         },
         start: function () {
             console.log("Started again!");
-            var events = new Events();
-            this.gamecloud.triggersEvent("nokey", events._hashTriggerStartNewGame, this.getUserId(), this.getUserId() + "charAsteroidsSpaceShip");
+            Gamecloud.triggersEvent("nokey", Event._hashTriggerStartNewGame, Gamecloud.getUserId(), Gamecloud.getCharacterId());
             // Give a new player achievement
             Achievements.giveAchievement("newPlayer");
             for (var i = 0; i < Game.sprites.length; i++) {
@@ -168,8 +148,7 @@ Game = {
                 Game.totalAsteroids++;
                 if (Game.totalAsteroids > 12) Game.totalAsteroids = 12;
                 Game.spawnAsteroids();
-                var events = new Events();
-                this.gamecloud.triggersEvent("nokey", events._hashTriggerNewLevel, this.getUserId(), this.getUserId() + "charAsteroidsSpaceShip");
+                Gamecloud.triggersEvent("nokey", Event._hashTriggerNewLevel, Gamecloud.getUserId(), Gamecloud.getCharacterId());
                 this.state = 'run';
             }
         },
@@ -179,12 +158,11 @@ Game = {
             if (!this.deathFlag) {
                 this.deathFlag = true;
 
-                var events = new Events();
                 // No death event has been sent
                 if (!this.deathSent) {
                     console.log("Player died!, sending the event to gamecloud");
                     // So send it now
-                    this.gamecloud.triggersEvent("nokey", events._hashTriggerPlayerDies, this.getUserId(), this.getUserId() + "charAsteroidsSpaceShip");
+                    Gamecloud.triggersEvent("nokey", Event._hashTriggerPlayerDies, Gamecloud.getUserId(), Gamecloud.getCharacterId());
                     // And change the flag
                     this.deathSent = true;
                 }
@@ -207,12 +185,11 @@ Game = {
             }
         },
         end_game: function () {
-            var events = new Events();
             // If no game over has yet been sent
             if (!this.gameOverSent) {
                 console.log("end_game, sending game over to gamecloud");
                 // Send it
-                this.gamecloud.triggersEvent("nokey", events._hashTriggerGameOver, this.getUserId(), this.getUserId() + "charAsteroidsSpaceShip");
+                Gamecloud.triggersEvent("nokey", Event._hashTriggerGameOver, Gamecloud.getUserId(), Gamecloud.getCharacterId());
                 // And flag
                 this.gameOverSent = true;
             }

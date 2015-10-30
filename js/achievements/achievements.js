@@ -43,10 +43,9 @@ var Achievements = {
      * Retrieves the player owned achievements from Gamecloud
      * @param {Function} callback Regular (err, result) callback function
      */
-    retrieveAchievementsFromGamecloud : function(playerId, characterId, callback) {
-        Events.checkOwnedAchievementFromGamecloud(playerId, characterId, callback);
+    retrieveAchievementsFromGamecloud : function(callback) {
+        Events.checkOwnedAchievementFromGamecloud(Gamecloud.getUserId(), callback);
         // Once done, callback
-        //callback(null, true);
     },
     /**
      * Gives an achievement to the player, if the player does not already have it

@@ -43,9 +43,9 @@ var Events = {
         Gamecloud.giveAchievement("NOAUTH", this._gainAchievementHashes[achievementName], playerId, characterId);
     },
 
-    checkOwnedAchievementFromGamecloud : function(playerId, characterId) {
+    checkOwnedAchievementFromGamecloud : function(playerId) {
         _.forEach(this._askAschievementHashes, function (achievementHash) {
-            Gamecloud.hasAchievement("NOAUTH", achievementHash, playerId, characterId, function (err, result) {
+            Gamecloud.hasAchievement("NOAUTH", achievementHash, playerId, function (err, result) {
                 if (err) {
                     throw err;
                 }
