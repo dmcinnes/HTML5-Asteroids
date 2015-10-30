@@ -38,6 +38,13 @@ Asteroid = function () {
                 roid.move(roid.scale * 3); // give them a little push
                 Game.sprites.push(roid);
             }
+        } else {
+            // Otherwise, we killed the last asteroid piece
+            Achievements.giveAchievement("destroyFirstAsteroid");
+        }
+        // Also, check if we got 1000 points
+        if(Game.score >= 1000) {
+            Achievements.giveAchievement("score1000Points");
         }
         Game.explosionAt(other.x, other.y);
         this.die();

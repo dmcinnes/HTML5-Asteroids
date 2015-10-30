@@ -62,6 +62,7 @@ var Achievements = {
             // Don't react, as the player already has this
         } else {
             // If not, add it
+            console.log("Gave user the following achievement:", achievementName);
             this.ownedAchievements.push(achievementName);
         }
     },

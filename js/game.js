@@ -15,6 +15,12 @@ Game = {
     deathSent : false,
     gameOverSent : false,
 
+    // Achievement related stuff
+    startedGames : 0,
+
+    // Started idling at 'waiting' state
+    idleTimeStarted : null,
+
     canvasWidth: 800,
     canvasHeight: 600,
 
@@ -55,9 +61,9 @@ Game = {
 
     FSM: {
 
-        userId : "",
+        userId: "",
 
-        initializeUserId : function() {
+        initializeUserId: function () {
             var userId = $('#gamecloud-username').text();
             if ((userId === undefined) || (userId === "username")) {
                 userId = "User" + moment().format().toString();
@@ -66,8 +72,8 @@ Game = {
             this.userId = "ex:" + userId;
         },
 
-        getUserId : function() {
-            if(this.userId === "") {
+        getUserId: function () {
+            if (this.userId === "") {
                 this.initializeUserId();
             }
 
@@ -78,15 +84,22 @@ Game = {
             Game.spawnAsteroids(5);
             this.gamecloud = new Gamecloud();
             this.state = 'waiting';
+            // Set the idle timer
+            Game.idleTimeStarted = moment();
         },
         waiting: function () {
-            Text.renderText(window.ipad ? 'Touch Screen to Start' : 'Press Space to Start', 36, Game.canvasWidth/2 - 270, Game.canvasHeight/2);
+            // If the user has idled more than 10 minutes
+            var now = moment();
+            //console.log("user has now idled:", now.diff(moment(Game.idleTimeStarted), 'minutes', true));
+            if (now.diff(moment(Game.idleTimeStarted), 'minutes', true) > 10) {
+                // Give an achievement
+                Achievements.giveAchievement("idler");
+            }
+            Text.renderText(window.ipad ? 'Touch Screen to Start' : 'Press Space to Start', 36, Game.canvasWidth / 2 - 270, Game.canvasHeight / 2);
             if (KEY_STATUS.space || window.gameStart) {
                 KEY_STATUS.space = false; // hack so we don't shoot right away
                 window.gameStart = false;
                 this.state = 'start';
-                // Give test achievements
-                Achievements.giveAchievement("newPlayer");
                 Achievements.displayOwnedAchievements();
             }
         },
@@ -94,6 +107,8 @@ Game = {
             console.log("Started again!");
             var events = new Events();
             this.gamecloud.triggersEvent("nokey", events._hashTriggerStartNewGame, this.getUserId(), this.getUserId() + "charAsteroidsSpaceShip");
+            // Give a new player achievement
+            Achievements.giveAchievement("newPlayer");
             for (var i = 0; i < Game.sprites.length; i++) {
                 if (Game.sprites[i].name == 'asteroid') {
                     Game.sprites[i].die();
@@ -101,120 +116,129 @@ Game = {
                     Game.sprites[i].visible = false;
                 }
             }
+            // set the started games +1
 
-        Game.score = 0;
-        Game.lives = 2;
-        Game.totalAsteroids = 2;
-        Game.spawnAsteroids();
-
-        Game.nextBigAlienTime = Date.now() + 30000 + (30000 * Math.random());
-
-        this.state = 'spawn_ship';
-    },
-    spawn_ship: function () {
-        Game.ship.x = Game.canvasWidth / 2;
-        Game.ship.y = Game.canvasHeight / 2;
-        if (Game.ship.isClear()) {
-            Game.ship.rot = 0;
-            Game.ship.vel.x = 0;
-            Game.ship.vel.y = 0;
-            Game.ship.visible = true;
-            this.state = 'run';
-        }
-    },
-    run: function () {
-        for (var i = 0; i < Game.sprites.length; i++) {
-            if (Game.sprites[i].name == 'asteroid') {
-                break;
+            Game.startedGames++;
+            // See if we have started already 10 games
+            if(Game.startedGames >= 10) {
+                // You have played 10 games in a row
+                Achievements.giveAchievement("10GamesInARow");
             }
-        }
-        if (i == Game.sprites.length) {
-            this.state = 'new_level';
-        }
-        if (!Game.bigAlien.visible && Date.now() > Game.nextBigAlienTime) {
-            Game.bigAlien.visible = true;
-            Game.nextBigAlienTime = Date.now() + (30000 * Math.random());
-        }
-    },
-    new_level: function () {
-        if (this.timer == null) {
-            this.timer = Date.now();
-        }
-        // wait a second before spawning more asteroids
-        if (Date.now() - this.timer > 1000) {
-            this.timer = null;
-            Game.totalAsteroids++;
-            if (Game.totalAsteroids > 12) Game.totalAsteroids = 12;
+            Game.score = 0;
+            Game.lives = 2;
+            Game.totalAsteroids = 2;
             Game.spawnAsteroids();
-            var events = new Events();
-            this.gamecloud.triggersEvent("nokey", events._hashTriggerNewLevel, this.getUserId(), this.getUserId() + "charAsteroidsSpaceShip");
-            this.state = 'run';
-        }
-    },
-    player_died: function () {
 
-        // Player died
-        if(!this.deathFlag) {
-            this.deathFlag = true;
+            Game.nextBigAlienTime = Date.now() + 30000 + (30000 * Math.random());
 
-            var events = new Events();
-            // No death event has been sent
-            if(!this.deathSent) {
-                console.log("Player died!, sending the event to gamecloud");
-                // So send it now
-                this.gamecloud.triggersEvent("nokey", events._hashTriggerPlayerDies, this.getUserId(), this.getUserId() + "charAsteroidsSpaceShip");
-                // And change the flag
-                this.deathSent = true;
+            this.state = 'spawn_ship';
+        },
+        spawn_ship: function () {
+            Game.ship.x = Game.canvasWidth / 2;
+            Game.ship.y = Game.canvasHeight / 2;
+            if (Game.ship.isClear()) {
+                Game.ship.rot = 0;
+                Game.ship.vel.x = 0;
+                Game.ship.vel.y = 0;
+                Game.ship.visible = true;
+                this.state = 'run';
             }
-        }
-        if (Game.lives < 0) {
-            this.deathFlag = false;
-            this.state = 'end_game';
-        } else {
+        },
+        run: function () {
+            for (var i = 0; i < Game.sprites.length; i++) {
+                if (Game.sprites[i].name == 'asteroid') {
+                    break;
+                }
+            }
+            if (i == Game.sprites.length) {
+                this.state = 'new_level';
+            }
+            if (!Game.bigAlien.visible && Date.now() > Game.nextBigAlienTime) {
+                Game.bigAlien.visible = true;
+                Game.nextBigAlienTime = Date.now() + (30000 * Math.random());
+            }
+        },
+        new_level: function () {
             if (this.timer == null) {
                 this.timer = Date.now();
             }
-          // wait a second before spawning
-          if (Date.now() - this.timer > 1000) {
-              this.timer = null;
-              this.deathFlag = false;
-              // We go to spawn, so flip of the deathSent
-              this.deathSent = false;
-              this.state = 'spawn_ship';
-          }
-        }
-    },
-    end_game: function () {
-        var events = new Events();
-        // If no game over has yet been sent
-        if(!this.gameOverSent) {
-            console.log("end_game, sending game over to gamecloud");
-            // Send it
-            this.gamecloud.triggersEvent("nokey", events._hashTriggerGameOver, this.getUserId(), this.getUserId() + "charAsteroidsSpaceShip");
-            // And flag
-            this.gameOverSent = true;
-        }
+            // wait a second before spawning more asteroids
+            if (Date.now() - this.timer > 1000) {
+                this.timer = null;
+                Game.totalAsteroids++;
+                if (Game.totalAsteroids > 12) Game.totalAsteroids = 12;
+                Game.spawnAsteroids();
+                var events = new Events();
+                this.gamecloud.triggersEvent("nokey", events._hashTriggerNewLevel, this.getUserId(), this.getUserId() + "charAsteroidsSpaceShip");
+                this.state = 'run';
+            }
+        },
+        player_died: function () {
 
-        Text.renderText('GAME OVER', 50, Game.canvasWidth/2 - 160, Game.canvasHeight/2 + 10);
-        if (this.timer == null) {
-            this.timer = Date.now();
-        }
-        // wait 5 seconds then go back to waiting state
-        if (Date.now() - this.timer > 5000) {
-            this.timer = null;
-            // Set the gameover sent flag back to false
-            this.gameOverSent = false;
-            this.state = 'waiting';
-        }
+            // Player died
+            if (!this.deathFlag) {
+                this.deathFlag = true;
 
-        window.gameStart = false;
-    },
+                var events = new Events();
+                // No death event has been sent
+                if (!this.deathSent) {
+                    console.log("Player died!, sending the event to gamecloud");
+                    // So send it now
+                    this.gamecloud.triggersEvent("nokey", events._hashTriggerPlayerDies, this.getUserId(), this.getUserId() + "charAsteroidsSpaceShip");
+                    // And change the flag
+                    this.deathSent = true;
+                }
+            }
+            if (Game.lives < 0) {
+                this.deathFlag = false;
+                this.state = 'end_game';
+            } else {
+                if (this.timer == null) {
+                    this.timer = Date.now();
+                }
+                // wait a second before spawning
+                if (Date.now() - this.timer > 1000) {
+                    this.timer = null;
+                    this.deathFlag = false;
+                    // We go to spawn, so flip of the deathSent
+                    this.deathSent = false;
+                    this.state = 'spawn_ship';
+                }
+            }
+        },
+        end_game: function () {
+            var events = new Events();
+            // If no game over has yet been sent
+            if (!this.gameOverSent) {
+                console.log("end_game, sending game over to gamecloud");
+                // Send it
+                this.gamecloud.triggersEvent("nokey", events._hashTriggerGameOver, this.getUserId(), this.getUserId() + "charAsteroidsSpaceShip");
+                // And flag
+                this.gameOverSent = true;
+            }
 
-    execute: function () {
-        this[this.state]();
-    },
+            Text.renderText('GAME OVER', 50, Game.canvasWidth / 2 - 160, Game.canvasHeight / 2 + 10);
+            if (this.timer == null) {
+                this.timer = Date.now();
+            }
+            // wait 5 seconds then go back to waiting state
+            if (Date.now() - this.timer > 5000) {
+                this.timer = null;
+                // Set the gameover sent flag back to false
+                this.gameOverSent = false;
+                this.state = 'waiting';
+                // Set the idle timer
+                Game.idleTimeStarted = moment();
+            }
 
-    state: 'boot'
+            window.gameStart = false;
+        },
+
+        execute: function () {
+            this[this.state]();
+        },
+
+        state: 'boot'
     }
 
 };
