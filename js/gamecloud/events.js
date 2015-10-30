@@ -39,19 +39,70 @@ var Events = {
 
     },
 
-    giveAchievement : function(playerId, achievementName, characterId) {
-        Gamecloud.giveAchievement("NOAUTH", this._gainAchievementHashes[achievementName], playerId, characterId);
+    giveAchievement : function(achievementName) {
+        var achievement = this._gainAchievementHashes[achievementName];
+        if(!achievement) {
+            throw new Error("Now achievement exists with name:", achievementName);
+        }
+        Gamecloud.giveAchievement("NOAUTH", this._gainAchievementHashes[achievementName], Gamecloud.getUserId(), Gamecloud.getCharacterId());
     },
 
     checkOwnedAchievementFromGamecloud : function(playerId) {
-        _.forEach(this._askAschievementHashes, function (achievementHash) {
-            Gamecloud.hasAchievement("NOAUTH", achievementHash, playerId, function (err, result) {
-                if (err) {
-                    throw err;
-                }
-                // We have some results
-                console.log("--RESULTS FROM GAMECLOUD:", result);
-            });
+        Gamecloud.hasAchievement("NOAUTH", this._askAschievementHashes.newPlayer, playerId, function (err, result) {
+            if (err) {
+                throw err;
+            }
+            console.log("--RESULTS FROM GAMECLOUD: <newPlayer>", result);
+            // We have some results
+            if(result.count > 0) {
+                // Set the achievement owned already
+                Achievements.addAchievementToOwned("newPlayer");
+            }
+
+        });
+        Gamecloud.hasAchievement("NOAUTH", this._askAschievementHashes.destroyFirstAsteroid, playerId, function (err, result) {
+            if (err) {
+                throw err;
+            }
+            // We have some results
+            console.log("--RESULTS FROM GAMECLOUD: <destroyFirstAsteroid>", result);
+            if(result.count > 0) {
+                // Set the achievement owned already
+                Achievements.addAchievementToOwned("destroyFirstAsteroid");
+            }
+        });
+        Gamecloud.hasAchievement("NOAUTH", this._askAschievementHashes.score1000Points, playerId, function (err, result) {
+            if (err) {
+                throw err;
+            }
+            // We have some results
+            console.log("--RESULTS FROM GAMECLOUD: <score1000Points>", result);
+            if(result.count > 0) {
+                // Set the achievement owned already
+                Achievements.addAchievementToOwned("score1000Points");
+            }
+        });
+        Gamecloud.hasAchievement("NOAUTH", this._askAschievementHashes["10GamesInARow"], playerId, function (err, result) {
+            if (err) {
+                throw err;
+            }
+            // We have some results
+            console.log("--RESULTS FROM GAMECLOUD: <10GamesInARow>", result);
+            if(result.count > 0) {
+                // Set the achievement owned already
+                Achievements.addAchievementToOwned("10GamesInARow");
+            }
+        });
+        Gamecloud.hasAchievement("NOAUTH", this._askAschievementHashes.idler, playerId, function (err, result) {
+            if (err) {
+                throw err;
+            }
+            // We have some results
+            console.log("--RESULTS FROM GAMECLOUD: <idler>", result);
+            if(result.count > 0) {
+                // Set the achievement owned already
+                Achievements.addAchievementToOwned("idler");
+            }
         });
     }
 };

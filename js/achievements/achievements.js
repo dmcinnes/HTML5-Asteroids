@@ -61,14 +61,23 @@ var Achievements = {
         if(this.checkIfOwnsAchievement(achievementName)) {
             // Don't react, as the player already has this
         } else {
-            // If not, add it
-            console.log("Gave user the following achievement:", achievementName);
-            // Display the given achievement
-            $('#achievement-' + achievementName).show();
+            // If not, add it to list of owned achievements
+            this.addAchievementToOwned(achievementName);
+            // Add it to the gamecloud as well
+            Events.giveAchievement(achievementName);
             // And show an info box
             $.notify("Gained achievement: " + achievementName, "success");
-            this.ownedAchievements.push(achievementName);
         }
+    },
+    /**
+     * Adds the achievement to the list of owned achievement
+     * @param {String} achievementName The name of the achievement to add to the list of owned achievements
+     */
+    addAchievementToOwned : function(achievementName) {
+        console.log("Gave user the following achievement:", achievementName);
+        // Display the given achievement
+        $('#achievement-' + achievementName).show();
+        this.ownedAchievements.push(achievementName);
     },
     /**
      * Zeroes the owned achievements. This is to enable new players to gain achievements as well
