@@ -851,15 +851,11 @@ for (var sfx in SFX) {
     audio.play();
 
     SFX[sfx] = function () {
-      if (!this.muted) {
-        if (audio.duration == 0) {
-          // somehow dropped out
-          audio.load();
-          audio.play();
-        } else {
-          audio.muted = false;
-          audio.currentTime = 0;
-        }
+      if (!SFX.muted) {
+        audio.muted = false;
+        audio.pause();
+        audio.currentTime = 0;
+        audio.play();
       }
       return audio;
     }
