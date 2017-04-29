@@ -442,7 +442,7 @@ Ship = function () {
     this.visible = false;
     this.currentNode.leave(this);
     this.currentNode = null;
-    Game.lives--;
+    //Game.lives--;
   };
 
 };
