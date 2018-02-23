@@ -1186,7 +1186,7 @@ $(function () {
     }
 
     if (paused) {
-      Text.renderText('PAUSED', 72, Game.canvasWidth/2 - 160, 120);
+      Text.renderText('this has been edited by fredi', 72, Game.canvasWidth/2 - 160, 120);
     } else {
       requestAnimFrame(mainLoop, canvasNode);
     }
