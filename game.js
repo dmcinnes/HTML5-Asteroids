@@ -308,13 +308,13 @@ Sprite = function () {
   };
   this.collision = function () {
   };
-  this.die = function () {
-    this.visible = false;
-    this.reap = true;
-    if (this.currentNode) {
-      this.currentNode.leave(this);
-      this.currentNode = null;
-    }
+  // this.die = function () {
+  //   this.visible = false;
+  //   this.reap = true;
+  //   if (this.currentNode) {
+  //     this.currentNode.leave(this);
+  //     this.currentNode = null;
+  //   }
   };
   this.transformedPoints = function () {
     if (this.transPoints) return this.transPoints;
