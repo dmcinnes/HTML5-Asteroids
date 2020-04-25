@@ -308,13 +308,13 @@ Sprite = function () {
   };
   this.collision = function () {
   };
-  // this.die = function () {
-  //   this.visible = false;
-  //   this.reap = true;
-  //   if (this.currentNode) {
-  //     this.currentNode.leave(this);
-  //     this.currentNode = null;
-  //   }
+  this.die = function () {
+    this.visible = false;
+    this.reap = true;
+    if (this.currentNode) {
+      this.currentNode.leave(this);
+      this.currentNode = null;
+    }
   };
   this.transformedPoints = function () {
     if (this.transPoints) return this.transPoints;
@@ -435,15 +435,15 @@ Ship = function () {
     }
   };
 
-  this.collision = function (other) {
-    SFX.explosion();
-    Game.explosionAt(other.x, other.y);
-    //Game.FSM.state = 'player_died';
-    this.visible = false;
-    this.currentNode.leave(this);
-    this.currentNode = null;
-    Game.lives--;
-  };
+  // this.collision = function (other) {
+  //   SFX.explosion();
+  //   Game.explosionAt(other.x, other.y);
+  //   Game.FSM.state = 'player_died';
+  //   this.visible = false;
+  //   this.currentNode.leave(this);
+  //   this.currentNode = null;
+  //   Game.lives--;
+  // };
 
 };
 Ship.prototype = new Sprite();
